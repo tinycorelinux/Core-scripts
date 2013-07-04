@@ -1,0 +1,62 @@
+#!/bin/busybox ash
+# (c) Robert Shingledecker 2009
+# $1 is title, $2 is file to read from, $3 is offset 0 or 1 (1 default)
+#
+. /etc/init.d/tc-functions
+useBusybox
+#
+[ -z "$2" ] && exit 1
+FILEIN="$2"
+[ "$FILEIN" == "-" ] && FILEIN=/dev/stdin
+OFFSET=1
+[ -n "$3" ] && OFFSET="$3"
+awk -v title="$1" -v offset="$OFFSET" -v answer="/tmp/select.ans" '
+function read_console() {
+	"head -1 < /dev/tty" | getline results
+	close("head -1 < /dev/tty")
+	return results
+}
+
+{ A[NR] = $0 }
+
+END {
+	if ( NR < 1 ) {
+		print "q" > answer
+		break
+	}
+	if ( NR == 1 ) {
+		print A[1] > answer
+		break
+	}
+	do {
+		system ("clear")
+		printf "\n%s\n\n", title
+		for (l=1; l<=15; l++) {
+			++j
+			if ( j <= NR ) printf "\t%2d. %s\n", j,  A[j]
+		}
+		printf "\nEnter selection ( 1 - %s ) or (q)uit", NR
+		if ( NR > 15 ) printf ", (n)ext, (p)revious: "
+		printf ": "
+		selection = read_console()
+		if (selection == "q") break
+		if (selection == "p") {
+			if ( j > 15 )
+				j = j - 30
+			else
+				j = 0
+			continue
+		}
+		if (selection == "n" || selection == "") {
+			if ( j > NR )
+				j = j - 15
+			continue
+		}
+		selection = selection + 0
+		if (selection+0 < 1 || selection+0 > NR ) j = j - 15
+	} while (selection < 1 || selection > NR)
+	if ( offset == 1 && selection != "q")
+		print A[selection] > answer
+	else
+		print selection > answer
+} ' < "$FILEIN"

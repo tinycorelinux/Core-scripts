@@ -1,0 +1,30 @@
+#!/bin/busybox ash
+# Set hostname
+# Originally a function contributed by henk.1955 
+# Now callable via /opt/bootsync.sh when no boot host= is specified.
+. /etc/init.d/tc-functions
+useBusybox
+HOSTNAME="$(getbootparam host 2>/dev/null)"
+[ -n "$HOSTNAME" ] || HOSTNAME="$1"
+[ -n "$HOSTNAME" ] || HOSTNAME="box"
+echo -n "${GREEN}Setting hostname to ${MAGENTA}$HOSTNAME${NORMAL} "
+rm -f /etc/hostname
+echo $HOSTNAME >/etc/hostname
+hostname -F /etc/hostname
+rm -f /etc/hosts
+cat >/etc/hosts <<EOT
+127.0.0.1 $HOSTNAME localhost
+
+# The following lines are desirable for IPv6 capable hosts
+# (added automatically by netbase upgrade)
+
+::1     ip6-localhost ip6-loopback
+fe00::0 ip6-localnet
+ff00::0 ip6-mcastprefix
+ff02::1 ip6-allnodes
+ff02::2 ip6-allrouters
+ff02::3 ip6-allhosts
+
+EOT
+
+echo "${GREEN}Done.${NORMAL}"

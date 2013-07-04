@@ -1,0 +1,30 @@
+#!/bin/sh
+# (c) Robert Shingledecker 2011
+#
+# Alllow removal of uninstalled (ondemand) extensions via tce-audit/appsaudit.
+. /etc/init.d/tc-functions
+ONBOOTNAME="$(getbootparam lst 2>/dev/null)"
+[ -n "$ONBOOTNAME" ] || ONBOOTNAME="onboot.lst"
+
+if [ -s /tmp/audit_marked.lst ]; then
+   > /tmp/audit_marked2.lst
+   for F in `cat /tmp/audit_marked.lst`; do
+      FROMDIR=`dirname "$F"` && TCEDIR=${FROMDIR%/*}
+      EXTN=`basename "$F"`; APP=${EXTN%.tcz}
+      if installed "$APP"; then
+	echo "$F" >> /tmp/audit_marked2.lst
+      else
+	echo "$F"
+	rm -f "$F"*
+	LIST="$TCEDIR"/copy2ram.lst; ONBOOT="${TCEDIR}/${ONBOOTNAME}"; XWBAR="$TCEDIR"/xwbar.lst
+	if grep -w "$EXTN" "$LIST" >/dev/null 2>&1; then sed -i '/'"$EXTN"'/d' "$LIST"; fi
+	if grep -w "$EXTN" "$ONBOOT" >/dev/null 2>&1; then sed -i '/'"$EXTN"'/d' "$ONBOOT"; fi
+	if grep -w "$EXTN" "$XWBAR" >/dev/null 2>&1; then sed -i '/'"$EXTN"'/d' "$XWBAR"; fi
+	[ -s "$FROMDIR"/tce.db ] && rm -f "$FROMDIR"/tce.db
+	[ -s "$FROMDIR"/tce.lst ] && rm -f "$FROMDIR"/tce.lst
+	ondemand -r "$APP"
+	[ "$ICONS" == "wbar" ] && wbar_rm_icon "$APP" &&  wbar.sh
+      fi
+   done
+   mv /tmp/audit_marked2.lst /tmp/audit_marked.lst
+fi

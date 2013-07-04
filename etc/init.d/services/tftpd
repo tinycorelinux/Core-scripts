@@ -1,0 +1,23 @@
+#!/bin/sh
+
+case "${1}" in
+	start)
+		if [ -z "$HOME" ]; then
+                   [ "$USER" ] || USER="$(cat /etc/sysconfig/tcuser)" || USER="tc"
+                   HOME=/home/"$USER"
+                fi
+		/sbin/udpsvd -E 0 69 tftpd $HOME &
+		;;
+
+	stop)
+		pkill udpsvd
+		;;
+
+	status)
+		pidof udpsvd
+		;;
+
+	*)
+		exit 1
+		;;
+esac

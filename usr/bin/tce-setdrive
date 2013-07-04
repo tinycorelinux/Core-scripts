@@ -1,0 +1,101 @@
+#!/bin/busybox ash
+# (c) Robert Shingledecker 2010
+# After boot setup for TCE directory and backup
+. /etc/init.d/tc-functions
+useBusybox
+
+MYDATA=mydata
+[ -r /etc/sysconfig/mydata ] && read MYDATA < /etc/sysconfig/mydata
+fetchDriveList() {
+  TMP="/tmp/tcesetdev"
+  TMP2="/tmp/tcesetdev2.$$"
+  awk '/mnt/{printf "%s\n",$2}' /etc/fstab|sort -n > "$TMP"
+  while read F; do
+    if  grep -qv ${F##*/} /etc/sysconfig/cdroms 2>/dev/null; then echo $F >> "$TMP2"; fi
+  done < "$TMP"
+  [ -s "$TMP2" ] && mv "$TMP2" "$TMP"
+  [ -s "$TMP" ] || rm "$TMP"
+}
+
+setupSelectedDrive() {
+  DEVICE="$ANSWER"
+  LOCAL_DEVICE="${DEVICE##/*/}"
+  [ -z "$LOCAL_DEVICE" ] && exit 1
+  find_mountpoint "$LOCAL_DEVICE"
+  if [ -n "$MOUNTPOINT" ]; then
+    if [ "$MOUNTED" == "no" ]; then
+      mount "$MOUNTPOINT"
+   fi
+  fi
+
+  TCEDIR="$ANSWER"/tce
+  if [ ! -d "$TCEDIR"/optional ]; then
+    sudo mkdir -p "$TCEDIR"/optional
+    [ "$?" == 0 ] || exit 1
+    sudo chown -R ${USER}.staff "$TCEDIR" 2>/dev/null
+    sudo chmod -R g+w "$TCEDIR" 2>/dev/null
+  fi
+  [ -f "$TCEDIR"/${MYDATA}.tgz ] || touch "$TCEDIR"/${MYDATA}.tgz
+  [ -s /etc/sysconfig/backup_device ] || echo "${TCEDIR#/mnt/}" > /etc/sysconfig/backup_device
+  sudo rm -f /etc/sysconfig/tcedir
+  sudo ln -s ${TCEDIR} /etc/sysconfig/tcedir
+}
+
+abort() {
+  echo "Usage: tce-setdrive { -l | -s }"
+  exit 1
+}
+
+# Main
+unset LIST SETUP
+
+while getopts ls OPTION
+do
+  case ${OPTION} in
+    l) LIST=TRUE ;;
+    s) SETUP=TRUE ;;
+    *) abort ;;
+  esac
+done
+shift `expr $OPTIND - 1`
+
+if [ ${LIST} ]; then
+  fetchDriveList
+  [ -s "$TMP" ] || exit 1
+  exit 0
+fi
+
+if [ ${SETUP} ]; then
+  ANSWER="$1"
+  [ -z ${ANSWER} ] && exit 1
+  setupSelectedDrive
+  exit 0
+fi
+
+TCEDIR="$(readlink /etc/sysconfig/tcedir)"
+[ -d "$TCEDIR" ] || exit 1
+if [ "${TCEDIR:0:8}" != "/tmp/tce" ]; then
+  echo
+  sudo chown -R "$USER".staff "$TCEDIR" 2>/dev/null
+  sudo chmod -R g+w "$TCEDIR" 2>/dev/null
+  echo -n "${GREEN}Your TCE Drive, $TCEDIR, has already been selected!${NORMAL}"
+  sleep 3
+  exit 1
+fi
+
+fetchDriveList
+
+[ -s "$TMP" ] || exit 1
+echo "${GREEN}"
+select "tce-setdrive - Choose Drive for TCE directory" "$TMP" 1
+echo "${NORMAL}"
+ANSWER=`cat /tmp/select.ans`;rm "$TMP"
+[ "$ANSWER" == "q" ] && exit 1
+
+setupSelectedDrive
+
+echo
+echo -n "${GREEN}Your TCE Drive, $TCEDIR, is now enabled!${NORMAL}"
+sleep 5
+echo
+exit 0

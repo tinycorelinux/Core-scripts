@@ -1,0 +1,12 @@
+#!/bin/sh
+
+for file in $@; do
+  case $file in
+  */*) true
+       ;;
+  *) file=./$file
+     ;;
+  esac
+LD_TRACE_LOADED_OBJECTS=1 /lib/ld-linux.so.2 $file
+done
+

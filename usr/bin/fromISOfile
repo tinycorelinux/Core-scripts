@@ -1,0 +1,99 @@
+#!/bin/busybox ash
+# (c) Robert Shingledecker 2012
+# Load cde from iso file 
+# At boot - called from tc-config with: iso=sdb1
+# After boot in /opt/bootsync.sh with /usr/bin/fromISOfile sdb1
+# After boot from command line with: sudo fromISOfile sdb1
+. /etc/init.d/tc-functions
+useBusybox
+checkroot
+[ -z "$1" ] && exit 1
+read USER < /etc/sysconfig/tcuser || exit 1
+[ -d /mnt/cdrom ] || mkdir /mnt/cdrom
+TARGET="$1"
+TARGET="${TARGET#/mnt/}"
+TARGET="${TARGET#/dev/}"
+DEVICE="${TARGET%%/*}"
+if [ "${TARGET##*.}" == "iso" ]
+then
+	TARGET="${TARGET#*/}"
+else
+	TARGET=""
+fi
+
+find_mountpoint "$DEVICE"
+if [ -z "$MOUNTPOINT" ]; then
+	echo "Invalid device specified: $DEVICE"
+	exit 1
+fi
+if ! mounted "$MOUNTPOINT"; then
+	mount "$MOUNTPOINT"
+	if [ "$?" != 0 ]; then
+		echo "Unable to mount drive!"
+		exit 1
+	fi
+fi
+if [ -z "$TARGET" ]; then
+	find "$MOUNTPOINT" -name "*.iso" > /tmp/isos.lst
+	FOUND="$(awk '{print NR}' /tmp/isos.lst 2>/dev/null)" || FOUND=0
+	if [ "$FOUND" == 0 ]; then
+		echo "No iso file found on /mnt/$DEVICE"
+		exit 1
+	fi
+	if [ "$FOUND" == 1 ]; then
+		TARGET=$(cat /tmp/isos.lst)
+	else
+		echo "Multiple isos found, please use full path."
+		cat /tmp/isos.lst
+		exit 1
+	fi
+else
+	TARGET="$MOUNTPOINT"/"$TARGET"
+fi
+echo "$TARGET"
+mount -t iso9660 -o ro "$TARGET" /mnt/cdrom
+if [ "$?" != 0 ]; then
+	echo "Failed to mount specified $TARGET"
+	exit 1
+fi
+if [ ! -d /mnt/cdrom/cde ]; then
+	echo "no cde directory found in $TARGET"
+	umount /mnt/cdrom
+	exit 1
+fi
+echo "Loading onboot.lst from embedded cde directory."
+LOADFROM=/mnt/cdrom/cde/optional
+CDELIST=/mnt/cdrom/cde/onboot.lst
+if [ -s "$CDELIST" ]; then
+	while read FILE; do
+		FILE="$LOADFROM/$FILE"
+		BASENAME=`basename "$FILE"`
+		APPNAME="${BASENAME%.tcz}"
+		if [ ! -f "$TCEINSTALLED"/"$APPNAME" ]; then
+			FLAGS=" -i -b "
+			su "$USER" -c 'tce-load '"$FLAGS"' '"$FILE"
+			if [ -s /tmp/aberr ]; then
+				echo "occured while loading: " "$FILE" >> /tmp/aberr
+				umount /mnt/cdrom
+				exit 1
+			fi
+		fi
+	done < "$CDELIST"
+	echo "$LOADFROM" > /etc/sysconfig/cde
+else
+	echo "No onboot.lst from in cde directory."
+	umount /mnt/cdrom
+	exit 1
+fi                                                                                               
+
+# Wrap up by performing updates as may be needed.
+if [ -e /etc/sysconfig/newmodules ]; then
+	depmod -a 2>/dev/null
+	/sbin/udevadm trigger
+fi
+/sbin/ldconfig 2>/dev/null
+if [ -s /tmp/setup.lst ]; then
+	for F in `cat /tmp/setup.lst`; do "$F"; done
+	rm -f /tmp/setup.lst
+fi
+setupHome

@@ -1,0 +1,3 @@
+#!/bin/sh
+#Generic wrapper for hosting Terminal when called from X
+[ "$DISPLAY" ] && /usr/local/bin/xterm -e $@ || $@

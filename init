@@ -1,0 +1,16 @@
+#!/bin/sh
+mount proc
+grep -qw multivt /proc/cmdline && sed -i s/^#tty/tty/ /etc/inittab
+if ! grep -qw noembed /proc/cmdline; then
+  mount / -o remount,size=90%
+  umount proc
+  exec /sbin/init
+fi
+umount proc
+if mount -t tmpfs -o size=90% tmpfs /mnt; then
+  if tar -C / --exclude=mnt -cf - . | tar -C /mnt/ -xf - ; then
+    mkdir /mnt/mnt
+    exec /sbin/switch_root mnt /sbin/init
+  fi
+fi
+exec /sbin/init

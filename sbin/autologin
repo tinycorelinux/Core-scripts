@@ -1,0 +1,9 @@
+#!/bin/busybox ash
+. /etc/init.d/tc-functions
+useBusybox
+if [ -f /var/log/autologin ] ; then
+    exec /sbin/getty 38400 tty1
+else
+    touch /var/log/autologin
+    exec login -f root
+fi

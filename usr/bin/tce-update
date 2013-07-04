@@ -1,0 +1,291 @@
+#!/bin/busybox ash
+# (c) Robert Shingledecker 2009
+# zsync mods by Curaga 2010
+
+. /etc/init.d/tc-functions
+useBusybox
+
+KERNELVER=$(uname -r)
+getMirror
+case $MIRROR in http*) [ -n "`which zsync`" ] && USEZSYNC=yes ;; esac
+
+dep_vars(){
+	sed -i "s@KERNEL@$KERNELVER@" $1
+}
+
+fetch(){
+	[ -f "$1" ] && rm -f "$1"
+	wget -cq "$MIRROR"/"$1"
+}
+fetchzsync(){
+	[ -f "$1" ] && rm -f "$1"
+	if zsync -i "$UPGRADE_DIR"/"$1" -q "$MIRROR"/"$1".zsync; then
+		rm -f "$1".zs-old
+	else
+		wget -cq "$MIRROR"/"$1" # Either there was no zsync file on the server, or it failed
+	fi
+}
+
+chkMd5Only(){
+	MYMD5=`cat "$F"`
+	TARGET="$(getbasefile "$F" 2)"
+	REPO=`grep -w " $TARGET" md5.db`
+	if [ -n "$REPO" ]; then
+		[ "$MYMD5" == "$REPO" ] ||  echo $(basename "${F%.md5.txt}")
+	else
+		echo "Error Could not verify $TARGET"  | tee -a "$ERRLIST"
+	fi
+}
+
+upgrade(){
+	TARGET="$(getbasefile "$F" 2)"
+	REPO=`grep -w " $TARGET" md5.db`
+	if [ -n "$REPO" ]; then
+		MYMD5=`cat "$F"`
+		if [ "$MYMD5" != "$REPO" ]; then
+			if [ "$QUERY" ]; then
+				echo -n " ${YELLOW}$TARGET${NORMAL}"
+			else
+				echo -n  "Updating $TARGET "
+				if [ -n "$USEZSYNC" ]; then
+					fetchzsync "$TARGET" 2>/dev/null
+				else
+					fetch "$TARGET" 2>/dev/null
+				fi
+				echo "$REPO" > "$TARGET".md5.txt
+				md5sum -cs "$TARGET".md5.txt
+				if [ "$?" == 0 ]; then
+					fetch "$TARGET".dep 2>/dev/null
+					if [ "$?" == 0 ]; then
+						dep_vars /tmp/"$TARGET".dep
+						mv /tmp/"$TARGET".dep "$TARGET_DIR"/.
+					fi
+					mv /tmp/"$TARGET".md5.txt "$TARGET_DIR"/. 2>/dev/null
+					mv /tmp/"$TARGET" "$TARGET_DIR"/. 2>/dev/null
+					UPDATED_APPS=1
+					echo "OK"
+				else
+					echo "Failed"
+					echo "Error occurred. $TARGET Not updated!" >> "$ERRLIST"
+					rm /tmp/"$TARGET".md5.txt
+					rm /tmp/"$TARGET"
+				fi
+			fi
+		fi
+	else
+		echo >> "$ERRLIST"
+		echo "Error Could not verify $TARGET"  | tee -a "$ERRLIST"
+	fi
+}
+
+
+check_dependencies(){
+#	echo "${BLUE}Checking dependencies:${NORMAL}"
+	for F in `ls "$UPGRADE_DIR"/*.dep 2> /dev/null`; do
+		for TARGET in `cat "$F"`; do
+			if [ ! -f "$UPGRADE_DIR"/"$TARGET" ] && [ ! -f "$UPGRADE_DIR"/upgrade/"$TARGET" ]; then
+				REPO=`grep -w "$TARGET" md5.db`
+				if [ -n "$REPO" ]; then
+					echo -n  "Fetching required dependency: $TARGET "
+					if [ -n "$USEZSYNC" ]; then
+						fetchzsync "$TARGET" 2>/dev/null
+					else
+						fetch "$TARGET" 2>/dev/null
+					fi
+					echo  "$REPO"  > "$TARGET".md5.txt
+					md5sum -cs "$TARGET".md5.txt
+					if [ "$?" == 0 ]; then
+						mv /tmp/"$TARGET".md5.txt "$TARGET_DIR"/. 2>/dev/null
+						mv /tmp/"$TARGET" "$TARGET_DIR"/. 2>/dev/null
+						UPDATED_APPS=1
+						echo "OK"
+					else
+						echo "Failed"
+						echo "Error occurred while fetching dependency: $TARGET" >> "$ERRLIST"
+						rm /tmp/"$TARGET".md5.txt
+						rm /tmp/"$TARGET"
+					fi
+				fi
+			fi
+		done
+	done
+}
+
+check_bootoptions(){
+for i in `cat /proc/cmdline`; do
+	case $i in
+		*=*)
+			case $i in
+				tce*) TCE=${i#*=} ;;
+			esac
+		;;
+		*)
+			case $i in
+				base) BASE=1 ;;
+				norestore) NORESTORE=1 ;;
+			esac
+		;;
+	esac
+done
+[ "$BASE" ] || MISSING="base"
+[ "$NORESTORE" ] || MISSING="$MISSING norestore"
+if [ -n "$MISSING" ]; then
+	echo "${GREEN}To ensure a safe batch upgrade of all extensions,"
+	echo "the following boot codes are recommended:"
+	echo "${YELLOW}base norestore text${NORMAL}"
+	echo
+	echo "${GREEN}Best to run when no other extensions are being used.${NORMAL}"
+	echo
+	echo "${YELLOW}The following boot codes are missing:"
+	echo "${RED}$MISSING${NORMAL}"
+	echo
+	echo "${BLUE}It is recommended to Reboot with the recommended  boot options,"
+	echo "and at system prompt enter:${YELLOW} sudo tce-update"
+	echo
+	echo "${GREEN}At minimum it better to exit from X and at system prompt enter:"
+	echo "${YELLOW}sudo tce-update"
+	echo
+	echo "${YELLOW}To ignore recommendatons and force an update, type ${RED}force${YELLOW}, then press Enter"
+	echo
+	echo "${BLUE}To query which extensions need to be updated, type ${YELLOW}query${BLUE}, then press Enter"
+	echo
+	echo -n "${GREEN}Otherwise press Enter key to exit: ${NORMAL}";read answer
+	case $answer in
+		force) ;;
+		query) QUERY=1 ;;
+		*) exit 1
+	esac
+fi
+}
+
+process_dir(){
+	if [ ! "$LIST" ]; then
+		echo -n "${BLUE}Checking Tiny Core Applications in ${YELLOW}"
+		echo "$UPGRADE_DIR${NORMAL}"
+		[ "$QUERY" ] && echo "${BLUE}The following extensions need to be updated!${NORMAL}"
+	fi
+	for F in `ls "$UPGRADE_DIR"/*.md5.txt 2>/dev/null | grep -E .tcz.md5.txt$`; do
+		if [ "$LIST" ]; then
+			chkMd5Only
+		else
+			upgrade
+		fi
+	done
+}
+
+process_cmd(){
+	TARGET="$1"
+	if [ "$QUERY" ] || [ "$LIST" ]; then
+		[ -z "${TARGET##*/}" ] || TARGET="$TARGET"/
+		TARGET_DIR=${TARGET%/*}
+		[ -d "$TARGET_DIR" ] || exit 1  # Need at least a dir
+		UPGRADE_DIR="$TARGET_DIR"
+		process_dir
+	else
+		if [ -f "$TARGET" ]; then
+			TARGET_DIR=${TARGET%/*}
+			[ -d "$TARGET_DIR"/upgrade ] || mkdir "$TARGET_DIR"/upgrade
+			F="$TARGET"
+			[ "${F%.md5.txt}" == "$F" ] && F="$F".md5.txt
+			UPGRADE_DIR="$TARGET_DIR"
+			TARGET_DIR="$TARGET_DIR"/upgrade
+			upgrade
+			check_dependencies
+		fi
+	fi
+	exit 0
+}
+
+# Main
+cd /tmp
+ERRLIST="upgrade_errors.lst"
+> "$ERRLIST"
+UPDATED_APPS=0
+[ -e md5.db ] && rm -f md5.db
+tce-fetch.sh md5.db.gz
+if [ "$?" != 0 ]; then
+	echo "Could not fetch md5 database."  | tee -a "$ERRLIST"
+	exit 1
+fi
+gzip -d md5.db.gz
+
+# First test for interactive mode - passed parameters
+if [ -n "$1" ]; then
+	case $1 in
+		list) LIST=1; process_cmd "$2" ;;
+		query) QUERY=1; process_cmd "$2" ;;
+		update) unset QUERY; process_cmd "$2" ;;
+	esac
+fi
+
+# If not interactive then check for easy mode or inplace batch update
+clear
+echo -n "${YELLOW}Checking for Easy Mode Operation... ${NORMAL}"
+[ -z "$TCE" ] && TCE="$1"
+[ -z "$TCE" ] && TCE=`readlink /etc/sysconfig/tcedir`
+[ "$TCE" == "/tmp/tce/" ] && TCE=""
+TCE="${TCE#/mnt/}"
+# Next search for tce
+[ -z "$TCE" ] && TCE="$(autoscan 'tce' 'd')"/tce
+TCE_DEVICE="${TCE%%/*}"
+TCE_DIR="${TCE#*/}"
+TCEDIR=/mnt/"$TCE_DEVICE"/"$TCE_DIR"
+if [ "$TCE_DEVICE" != "nfs" ] ; then
+	mount /mnt/"$TCE_DEVICE" 2> /dev/null
+	if [ "$?" == 1 ]; then
+		echo
+		echo "${RED}Could not find a valid tce directory!${NORMAL}"
+		exit 1
+	fi
+	USED_SPACE=`du -sk "$TCEDIR" | awk '{print $1}'`
+	FREE_SPACE=`df /dev/"$TCE_DEVICE" | awk '/'"$TCE_DEVICE"'/{ print $4}'`
+	NEED_SPACE=`expr "$USED_SPACE" \* 2`
+	EASY_MODE=`expr $NEED_SPACE \< "$FREE_SPACE"`
+else
+	EASY_MODE=1
+fi
+
+if [ "$EASY_MODE" == 1 ]; then
+	echo "${GREEN}OK"
+	echo
+	echo "${GREEN}Press ${YELLOW}Enter${GREEN} key to begin batch update of extensions in /${TCE}"
+	echo -n "or enter any char to exit now: ${NORMAL}";read ANS
+	[ -z "$ANS" ] || exit 1
+	UPGRADE_DIR="$TCEDIR"
+else
+	echo; echo
+	echo "${YELLOW}Unfortunately there is not enough free disk space for easy mode."
+	echo "${BLUE}You can still proceed with in-place extension update.i${NORMAL}"
+	echo
+	UPGRADE_DIR="$TCEDIR"
+	check_bootoptions
+fi
+
+cd /tmp
+ERRLIST="tce-update-err.lst"
+> "$ERRLIST"
+
+if [ -d "$UPGRADE_DIR"/optional ]; then
+	UPGRADE_DIR="$UPGRADE_DIR"/optional
+	if [ "$EASY_MODE"  == 1 ]; then
+		TARGET_DIR="$UPGRADE_DIR"/upgrade
+	else
+		TARGET_DIR="$UPGRADE_DIR"
+	fi
+	[ -d "$TARGET_DIR" ] || mkdir "$TARGET_DIR"
+	process_dir
+	check_dependencies
+fi
+
+if [ -s "$ERRLIST" ]; then
+	echo -n "${RED}Errors occurred during upgrade. Press Enter to see /tmp/upgrade_errors.lst${NORMAL}"; read junk
+	less /tmp/upgrade_errors.lst
+fi
+if [ ! "$QUERY" ]; then
+	if [ $UPDATED_APPS == 1 ]; then
+		echo "${GREEN}Reboot to use new updated extensions!${NORMAL}"
+		else
+		echo "${GREEN}Your system is up-to-date.${NORMAL}"
+	fi
+fi
+echo -n "Press Enter key. ";read junk

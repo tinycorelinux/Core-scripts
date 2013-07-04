@@ -1,0 +1,246 @@
+#!/bin/busybox ash
+# (c) Robert Shingledecker 2009, 2010
+. /etc/init.d/tc-functions
+useBusybox
+getMirror
+KERNELVER=$(uname -r)
+TCE_DB="tce.db"
+TCE_LST="tce.lst"
+DEP_WORK="/tmp/tce.dep.lst"
+AUDIT_RESULTS="/tmp/audit_results.txt"
+AUDIT_WORK="/tmp/audit_work.txt"
+AUDIT_MARKED="/tmp/audit_marked.lst"
+DEFAULT_DIR=/etc/sysconfig/tcedir/optional
+ACTION="$1"
+ARG2="$2"
+
+abort(){
+	echo "Usage: tce-audit { updatedeps | builddb | auditall | fetchmissing | nodepends | notrequired | marked | clearlst }  /path/to/tcedir/"
+	echo "       tce-audit { dependson | requiredby | audit | delete } /path/to/tcedir/extension.tcz"
+	echo "       tce-audit { remove }"
+	exit 1
+}
+
+[ -z ${ACTION} ] && abort
+
+if [ "${ARG2:0:1}" == "/" ] && [ -d ${ARG2} ]; then
+	TCEDIR=${ARG2}
+	[ -z ${TCEDIR} ] && TCEDIR=${DEFAULT_DIR}
+	[ -d ${TCEDIR} ] || abort
+	EXTNAME=""
+else
+	TCEDIR=${TCEDIR%/*}
+	[ -z ${TCEDIR##/*/} ] && TCEDIR=${DEFAULT_DIR}
+	[ -d ${TCEDIR} ] || abort
+	EXTNAME=${ARG2##/*/}
+	[ ${EXTNAME%%.tcz} == ${EXTNAME} ] && EXTNAME=${EXTNAME}.tcz
+	EXTNAME="${EXTNAME/-KERNEL/-${KERNELVER}}"
+fi
+
+local_recursive_scan() {
+	EXT="${1//-KERNEL.tcz/-${KERNELVER}.tcz}"
+# Don't need duplicates in the database
+	grep -q "^${EXT}$" "$DEP_WORK"
+	[ "$?" == 0 ]  || echo ${EXT} >> "$DEP_WORK"
+	deps=""
+	if [ -f ${EXT}.dep ]; then
+		deps=`cat ${EXT}.dep`
+		for d in $deps; do
+			local_recursive_scan $d
+		done
+	fi
+}
+
+updatedeps(){
+	echo -n "Updating .dep files from "
+	echo "$TCEDIR"
+	ls *.tcz | while read F
+	do
+		TARGET=${F##/*/}.dep
+		TARGET="${TARGET/-KERNEL/-${KERNELVER}}"
+		echo -n "."
+		[ -f /tmp/"$TARGET" ] && rm -f /tmp/"$TARGET"
+		wget -cq -P /tmp "$MIRROR"/"$TARGET" 2>/tmp/fetch_result
+		if [ "$?" == 0 ]; then
+			mv /tmp/"$TARGET" "$TCEDIR"/.
+		else
+			if grep -v 404 /tmp/fetch_result; then
+				echo "$?" >> "$AUDIT_RESULTS"
+				echo "Error on downloading of $F" >> "$AUDIT_RESULTS"
+				echo "Could be a network issue or ..." >> "$AUDIT_RESULTS"
+				echo "that this extension has a new name or is no longer supported!" >> "$AUDIT_RESULTS"
+			fi
+		fi
+	done
+	echo
+	[ -s "$AUDIT_RESULTS" ] && echo "Errors occurred during audit. See /tmp/audit_results.txt"
+}
+
+builddb(){
+	> "$AUDIT_RESULTS"
+	> "$TCE_DB"
+	> "$TCE_LST"
+	echo -n "Building Extension Database from "
+	echo "$TCEDIR"
+	ls *.tcz 2>/dev/null | while read F
+	do
+		TARGET=${F##/*/}
+		TARGET="${TARGET/-KERNEL/-${KERNELVER}}"
+		echo "$TARGET" >> "$TCE_LST"
+		> "$DEP_WORK"
+		echo -n "."
+		local_recursive_scan "$TARGET"
+		cat "$DEP_WORK" >> "$TCE_DB"
+		echo "" >> "$TCE_DB"
+	done
+	sort -f "$TCE_LST" > /tmp/sort.$$ && mv /tmp/sort.$$ "$TCE_LST" 2>/dev/null
+	echo
+}
+
+dependson() {
+	awk -v target="$1" -v results="$AUDIT_RESULTS" '
+	BEGIN {
+		FS="\n"
+		RS=""
+		print "Has the following dependencies:" > results
+	}
+	{
+		if ($1 == target)
+			for (i=2; i <= NF; i=i+1 )
+				print $i >> results
+	} ' < "$TCE_DB"
+}
+
+nodepends() {
+	awk -v results="$AUDIT_RESULTS" '
+	BEGIN {
+		FS="\n"
+		RS=""
+		print "The following extensions have no dependencies:" > results
+	}
+	{
+		if (NF == 1)
+			print $1 > results
+	} ' < "$TCE_DB"
+}
+
+notrequired() {
+	echo "The following are NOT required by any other extensions:" > "$AUDIT_WORK"
+	while read  F; do
+		> "$AUDIT_RESULTS"
+		requiredby "$F"
+		[ -s "$AUDIT_RESULTS" ] || echo "$F" >> "$AUDIT_WORK"
+	done < "$TCE_LST"
+	mv "$AUDIT_WORK" "$AUDIT_RESULTS"
+}
+
+requiredby() {
+	awk -v target="$1" -v results="$AUDIT_RESULTS" '
+	BEGIN {
+		FS="\n"
+		RS=""
+	}
+	{
+		for (i=2; i <= NF; i=i+1 )
+			if ($i == target) print $1 > results
+	} ' < "$TCE_DB"
+}
+
+auditall() {
+	> "$AUDIT_RESULTS"
+	while read  F; do
+		audit "$F"
+	done < "$TCE_LST"
+}
+
+fetchmissing() {
+	auditall
+	for F in $(awk '{print $3}' $AUDIT_RESULTS | sort | uniq); do
+		tce-load -wl "$F" 2>/dev/null
+	done
+	> "$AUDIT_RESULTS"
+}
+
+audit() {
+	awk -v target="$1" -v list="$TCE_LST" -v results="$AUDIT_RESULTS" '
+	BEGIN {
+		FS="\n"
+		RS=""
+	}
+	{
+		if ($1 == target) {
+			for ( i = 2; i <= NF; i++ ) {
+				result = system("grep -w "$i" "list" >/dev/null 2>&1")
+				if (result == 1)
+					print "For " target " " $i" is missing!" >> results
+			}
+		}
+	} ' < "$TCE_DB"
+}
+
+#main
+cd "$TCEDIR"
+> "$AUDIT_RESULTS"
+
+case $1 in
+	updatedeps) updatedeps
+		builddb
+	;;
+	builddb) builddb
+	;;
+	dependson) dependson "$EXTNAME"
+	;;
+	nodepends) nodepends
+	;;
+	notrequired) notrequired
+	;;
+	requiredby) requiredby "$EXTNAME"
+	;;
+	auditall) auditall
+	;;
+	fetchmissing) fetchmissing
+	;;
+	audit) audit "$EXTNAME" "report"
+	;;
+	delete)
+		requiredby "$EXTNAME"
+		if [ -s "$AUDIT_MARKED" ]; then
+			for M in `cat "$AUDIT_MARKED"`; do
+				sed -i '/'`basename "$M"`'/d' "$AUDIT_RESULTS"
+			done
+		fi
+		if [ -s "$AUDIT_RESULTS" ]; then
+			echo "$EXTNAME" "cannot be deleted." >> "$AUDIT_RESULTS"
+		else
+			awk 'BEGIN { FS="\n"; RS="" }/^'"$EXTNAME"'/' "$TCE_DB" > /tmp/audit_work.$$
+			if [ -s /tmp/audit_work.$$ ]; then
+				cp /tmp/audit_work.$$ /tmp/audit_work2.$$
+				[ -s "$AUDIT_MARKED" ] && while read M; do echo ${M##*/} >> /tmp/audit_work2.$$; done < "$AUDIT_MARKED"
+				for D in `cat /tmp/audit_work.$$`; do
+					> "$AUDIT_RESULTS"
+					requiredby "$D"
+					RESULTS=`  grep -vf /tmp/audit_work2.$$ "$AUDIT_RESULTS"`
+					if [  "$RESULTS" = "" ]; then
+						grep -q "$D" "$AUDIT_MARKED" 2>/dev/null || echo "$TCEDIR"/"$D" >> "$AUDIT_MARKED"
+						grep -q "$D" /tmp/audit_results.$$ 2>/dev/null || echo "$TCEDIR"/"$D" >> /tmp/audit_results.$$
+					fi
+				done
+				rm /tmp/audit_work.$$ /tmp/audit_work2.$$
+				mv /tmp/audit_results.$$ "$AUDIT_RESULTS"
+			fi
+		fi
+	;;
+	marked) if [ -s "$AUDIT_MARKED" ]; then
+			sort "$AUDIT_MARKED" | uniq | tee /tmp/audit_results.$$
+			mv /tmp/audit_results.$$ "$AUDIT_MARKED"
+		fi
+	;;
+	clearlst) > "$AUDIT_MARKED"
+	;;
+	remove) tce-remove
+		exit 0
+	;;
+	*) abort
+	;;
+esac
+if [ -s "$AUDIT_RESULTS" ]; then cat "$AUDIT_RESULTS"; fi

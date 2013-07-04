@@ -1,0 +1,178 @@
+#!/bin/busybox ash
+#(c) Robert Shingledecker 2009-2011
+
+. /etc/init.d/tc-functions
+useBusybox
+checkroot
+
+read USER < /etc/sysconfig/tcuser
+TCEINSTALLED="/usr/local/tce.installed"
+
+process_normal_tcedir() {
+	[ -z "$TCE" ] && TCE="$(autoscan 'tce' 'd')"/tce
+	if [ "$TCE" != "/tce" ]; then
+		TCE_DEVICE="${TCE%%/*}"
+		TCE_DIR="${TCE#*/}"
+		if [ "$TCE_DEVICE" = "$TCE_DIR" ]; then TCE_DIR="tce"; fi
+		find_mountpoint "$TCE_DEVICE"
+		if [ -n "$MOUNTPOINT" ]; then
+			if [ "$MOUNTED" == "yes" ]; then
+				setupExtnDirs
+			else
+				mount "$MOUNTPOINT"
+				if [ $? == 0 ]; then
+					UMOUNT="yes"
+					setupExtnDirs
+				fi
+			fi
+		fi
+	else
+	   MOUNTPOINT="/tmp"; TCE_DIR="tce"
+	fi
+
+	TCEDIR="$MOUNTPOINT"/"$TCE_DIR"
+	if [ ! -d "$TCEDIR"/optional ]; then
+		mkdir "$TCEDIR"/optional
+		chown -R "$USER".staff "$TCEDIR"
+	fi
+	[ -L /etc/sysconfig/tcedir ] && rm -f /etc/sysconfig/tcedir
+	ln -sf "$TCEDIR" /etc/sysconfig/tcedir
+	chown -R "$USER".staff "$TCEINSTALLED"
+	sync
+	[ "$MOUNTPOINT" == "/tmp" ] && return
+
+# 	Process any .gzs in tce directory before regular extensions.
+	if [ "$(ls -A "$TCEDIR"/*.gz 2>/dev/null)" ]; then
+		process_gz "$TCEDIR"
+	fi
+	
+	if [ -d "$TCEDIR"/optional/upgrade ] && [ "$(ls -A "$TCEDIR"/optional/upgrade 2>/dev/null)" ]; then
+		echo -n "${GREEN}Performing upgrade from $TCEDIR/optional/upgrade. ${NORMAL}"
+		yes y | cp -ai "$TCEDIR"/optional/upgrade/* "$TCEDIR"/optional/. 2>/dev/null && rm -rf "$TCEDIR"/optional/upgrade
+		echo "${YELLOW}Done.${NORMAL}"
+	fi
+#	Process regular extensions	
+	LOADFROM="$TCEDIR"/optional
+	ONBOOT="$TCEDIR"/"$TARGETLIST"
+	[ -s "$ONBOOT" ] && for FILE in `cat "$ONBOOT"`; do FILE="$LOADFROM/$FILE" && process; done
+	sync
+}
+
+setupExtnDirs() {
+	[ -d "$MOUNTPOINT"/"$TCE_DIR"/optional ] || mkdir -p "$MOUNTPOINT"/"$TCE_DIR"/optional
+	[ -d "$MOUNTPOINT"/"$TCE_DIR"/ondemand ] || mkdir -p "$MOUNTPOINT"/"$TCE_DIR"/ondemand
+	touch "$MOUNTPOINT"/"$TCE_DIR"/onboot.lst
+	chown -R "$USER".staff "$MOUNTPOINT"/"$TCE_DIR" 2>/dev/null
+	chmod -R g+w "$MOUNTPOINT"/"$TCE_DIR" 2>/dev/null
+}
+
+process_gz() {
+	FILELIST=`ls "$1"/*.gz`
+	cd /
+	for FILE in $FILELIST; do
+		zcat "$FILE" | cpio -idmu > /dev/null 2>&1
+		GZ="${FILE##*/}"
+		STARTSCRIPT="$TCEINSTALLED"/"${GZ%.gz}"
+		[ -s "$STARTSCRIPT" ] && sh "$STARTSCRIPT"
+	done
+	cd -
+	setupHome
+}
+
+process() {
+	BASENAME=`basename "$FILE"`
+	APPNAME="${BASENAME%.tcz}"
+	[ -f "$TCEINSTALLED"/"$APPNAME" ] && return
+	FLAGS=" -i -b "
+	su "$USER" -c 'tce-load '"$FLAGS"' '"$FILE"
+	if [ -s /tmp/aberr ]; then
+		echo "occured while loading: " "$FILE" >> /tmp/aberr
+		exit 1
+	fi
+}
+
+process_CD() {
+	CD="/mnt/${DEV#/dev/}"
+	mount "$CD" 2>/dev/null
+	if [ "$?" == 0 ] ; then
+		if [ -d "$CD"/cde ]; then
+			LOADFROM="$CD"/cde/optional
+			CDELIST="$CD"/cde/"$TARGETLIST"
+			if [ -s "$CDELIST" ]; then
+				while read FILE; do
+					FILE="$LOADFROM/$FILE"
+					process
+				done < "$CDELIST"
+				echo "$LOADFROM" > /etc/sysconfig/cde
+			fi
+		else
+			umount "$CD"
+		fi
+	fi
+}
+
+for i in `cat /proc/cmdline`; do
+	case $i in
+		tce=*) TCE=${i#*=} ;;
+		lst=*) TARGETLIST=${i#*=} ;;
+	esac
+	case $i in
+		cde) CDE=1 ;;
+		base) ONLYBASE=1 ;;
+	esac
+done
+
+[ -n "$TARGETLIST" ] || TARGETLIST="onboot.lst"
+
+# Process any .gzs before attempting to mount tce directory.
+# /tmp/builtin support provided for embedding extensions inside the initrd.
+if [ "$(ls -A "/tmp/builtin"/*.gz 2>/dev/null)" ]; then
+	process_gz "/tmp/builtin"
+fi
+
+# Next Check for any tcz initrd builtins
+if [ -d /tmp/builtin ] && [ "$(ls -A /tmp/builtin 2>/dev/null)" ]; then
+	TCEDIR=/tmp/builtin
+	LOADFROM="$TCEDIR"/optional
+	[ -s "$TCEDIR"/"$TARGETLIST" ] && for FILE in `cat "$TCEDIR"/"$TARGETLIST"`; do FILE="$LOADFROM/$FILE" && process; done
+fi
+
+# Next process regular extensions unless BASE boot option has been specified.
+
+if [ "$1" == "booting" ] && [ -n "$ONLYBASE" ]; then
+	echo "${GREEN}Skipping regular Extension loading as requested on the command line.${NORMAL}"
+	TCEDIR="/tmp/tce"
+	if [ ! -d "$TCEDIR"/optional ]; then
+		mkdir "$TCEDIR"/optional
+		chown -R "$USER".staff "$TCEDIR"
+	fi
+else
+	process_normal_tcedir
+fi
+
+# Finally check for CD Extensions if requested
+if [ "$CDE" -a -s /etc/sysconfig/cdroms ]; then
+	for DEV in `cat /etc/sysconfig/cdroms`; do
+		process_CD
+	done 
+fi			
+
+# If nothing loaded then also check for pseudo CD, e.g., isohybrid
+if [ "$CDE" -a -z "$CDELIST" ]; then
+	sleep 5
+	DEV="$(autoscan 'cde' 'd')"
+	process_CD
+fi
+
+# Wrap up by performing updates as may be needed.
+if [ -e /etc/sysconfig/newmodules ]; then
+	depmod -a 2>/dev/null
+	/sbin/udevadm trigger
+fi
+/sbin/ldconfig 2>/dev/null
+if [ -s /tmp/setup.lst ]; then
+	for F in `cat /tmp/setup.lst`; do "$F"; done
+	rm -f /tmp/setup.lst
+fi
+
+setupHome

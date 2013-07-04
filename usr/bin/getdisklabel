@@ -1,0 +1,10 @@
+#!/bin/busybox ash
+. /etc/init.d/tc-functions
+useBusybox
+[ -n "$1" ] || exit 1
+DEVINFO="$(blkid -s LABEL $1)"
+[ -z "$DEVINFO" ] && exit 1
+
+LABEL="${DEVINFO##*LABEL=}"
+LABEL="$(echo "$LABEL"|tr -d '"')"
+echo "$LABEL"

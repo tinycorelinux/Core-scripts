@@ -1,0 +1,49 @@
+#!/bin/busybox ash
+. /etc/init.d/tc-functions
+useBusybox
+TCEDIR="/etc/sysconfig/tcedir"
+TCEINSTALLED="/usr/local/tce.installed"
+TCELIST="/tmp/tcelist"
+# Display installed (-i), uninstalled (-u), or orphaned (-o)
+
+[ -n "$1" ] || echo "Usage tce-status -i | -u | -o"
+
+installed() {
+	for E in `ls "$TCEINSTALLED" 2>/dev/null`; do
+		echo "$E"
+	done
+}
+
+uninstalled() {
+	for E in `ls "$TCEDIR"/optional/*.tcz 2>/dev/null`; do
+		E="${E##*/}"
+		[ -e "$TCEINSTALLED"/"${E%.tcz}" ] || echo "$E"
+	done
+}
+
+orphaned() {
+	echo
+	getMirror
+	echo "Standby checking for tcz files not found on:"
+	echo "$MIRROR"
+	echo
+	MIRROR_TYPE="$(awk 'BEGIN{FS=":"}{print $1}' /opt/tcemirror)"
+	if [ "$MIRROR_TYPE" == "http" ]; then
+		for E in `ls "$TCEDIR"/optional/*.tcz* 2>/dev/null`; do
+			E="${E##*/}"
+			busybox wget -sq "$MIRROR"/"$E" 2>/dev/null || echo "$E not found!"
+		done
+	else
+		echo "ftp mirrors currently do not support orphan file checking."
+		echo "Select another non-ftp mirror to use this feature."
+	fi
+}
+
+while getopts iuo OPTION
+do
+	case ${OPTION} in
+		i) installed ;;
+		u) uninstalled ;;
+		o) orphaned ;;
+	esac
+done

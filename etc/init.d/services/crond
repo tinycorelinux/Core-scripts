@@ -1,0 +1,19 @@
+#!/bin/sh
+
+case "${1}" in
+	start)
+		crond
+		;;
+
+	stop)
+		pkill crond
+		;;
+
+	status)
+		pidof -o %PPID crond
+		;;
+
+	*)
+		exit 1
+		;;
+esac

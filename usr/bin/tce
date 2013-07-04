@@ -1,0 +1,107 @@
+#!/bin/sh
+# Tiny Core Browser
+# (c) Robert Shingledecker 2009-2012
+. /etc/init.d/tc-functions
+trap 'echo && exit 1 1>&2' 1 2 15
+
+searchInfoList() {
+	clear
+	if [ ! -n "$ITEM" ] || [ ${ITEM:0:1} == "-" ]; then
+		echo -n "Enter starting chars of desired extension, e.g. abi: "; read ITEM
+		[ ! -n "$ITEM" ] && quit
+	fi
+	search.sh "$ITEM" > info.lst
+}
+
+whatProvides() {
+	clear
+	if [ ! -n "$ITEM" ] || [ ${ITEM:0:1} == "-" ]; then
+		echo -n "Enter search term, e.g. iwconfig: "; read ITEM
+		[ ! -n "$ITEM" ] && quit
+	fi
+	provides.sh "$ITEM" > info.lst
+}
+ 
+keywordSearch() {
+	clear
+	if [ ! -n "$ITEM" ] || [ ${ITEM:0:1} == "-" ]; then
+		echo -n "Enter search term(s), e.g. browser: "; read ITEM
+		[ ! -n "$ITEM" ] && quit
+	fi
+	search.sh -t "$ITEM" > info.lst
+}
+
+selectItem(){
+	select "tce - Tiny Core Extension browser" info.lst
+	EXTN="$(cat /tmp/select.ans)"
+	[ "$EXTN" == "q" ] && unset EXTN
+}
+
+displayInfo(){
+	if [ -n "$EXTN" ]; then
+		tce-fetch.sh "$EXTN".info
+		less "$EXTN".info
+		rm "$EXTN".info
+	fi
+}
+
+displayDepends(){
+	tce-fetch.sh "$EXTN".dep 2>/dev/null
+	if [ "$?" == 0 ]; then
+		less "$EXTN".dep
+		rm "$EXTN".dep
+	fi
+}
+
+displayTree(){
+	tce-fetch.sh "$EXTN".tree 2>/dev/null
+	if [ "$?" == 0 ]; then
+		less "$EXTN".tree
+		rm "$EXTN".tree
+	fi
+}
+
+displaySize(){
+	clear
+	tce-size "$EXTN"
+}
+
+displayFiles(){
+	tce-fetch.sh "$EXTN".list
+	less "$EXTN".list
+	rm "$EXTN".list
+}
+
+quit(){
+	rm -f info.lst* /tmp/tags.lst /tmp/select.ans > /dev/null
+	cd - > /dev/null
+	rm -rf $TMPDIR 2>/dev/null
+	exit 0
+}
+
+# Main
+checknotroot
+TMPDIR=`mktemp -d -t`
+cd $TMPDIR
+clear
+echo "tce-ab - Tiny Core Extension: Application Browser"
+echo
+while true; do
+	[ -n "$EXTN" ] && echo -e "\033[40;37;7m $EXTN \033[0m" && echo -n "A)bout I)nstall O)nDemand D)epends T)ree F)iles siZ)e L)ist "
+	echo -n "S)earch P)rovides K)eywords or Q)uit: "; read -s -n1 ANS; echo
+	case ${ANS} in
+		A|a) displayInfo ;;
+		I|i) tce-load -w -i "$EXTN" ;;
+		O|o) tce-load -w -o "$EXTN" ;;
+		D|d) displayDepends ;;
+		T|t) displayTree ;;
+		Z|z) displaySize ;;
+		F|f) displayFiles ;;
+		L|l) selectItem ;;
+		S|s) ITEM="" && searchInfoList "$ITEM" && selectItem; displayInfo ;;
+		P|p) ITEM="" && whatProvides "$ITEM" && selectItem; displayInfo ;;
+		K|k) ITEM="" && keywordSearch "$ITEM" && selectItem; displayInfo ;;
+		Q|q) quit ;;
+		*) ;; #displayInfo ;;
+	esac
+done

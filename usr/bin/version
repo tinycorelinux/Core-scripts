@@ -1,0 +1,28 @@
+#!/bin/busybox ash
+. /etc/init.d/tc-functions
+useBusybox
+RESULTS="$(cat /usr/share/doc/tc/release.txt)"
+while getopts cls OPTION
+do
+  case ${OPTION} in
+    c) LATEST=`wget -q -O - $(cat /opt/tcemirror)/latest 2>/dev/null`
+       if [ "$?" == 0 ]; then
+       		RUNNING="${RESULTS##*-}"
+       		if [ "$LATEST" != "$RUNNING" ]; then
+       			echo "Warning:"
+       			echo "You are running version $RUNNING"
+       			echo "The latest release is $LATEST"
+       		fi
+       fi
+       exit
+       ;;
+    l) echo "$RESULTS"
+       exit
+       ;;
+    s) echo "${RESULTS##*_}"
+       exit
+       ;;
+  esac
+done
+echo "$RESULTS"
+exit

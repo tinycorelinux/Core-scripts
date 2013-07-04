@@ -1,0 +1,9 @@
+#!/bin/busybox ash
+. /etc/init.d/tc-functions
+useBusybox
+[ -n "$1" ] || exit 1
+DEVINFO="$(blkid $1)"
+UUID="${DEVINFO##*UUID=}"
+UUID="${UUID%%[    ]*}"
+UUID="$(echo "$UUID"|tr -d '"')"
+echo "$UUID"

@@ -1,0 +1,146 @@
+#!/bin/busybox ash
+# Woven together by Curaga (2008)
+. /etc/init.d/tc-functions
+useBusybox
+
+ROOTFS=core
+
+fail(){
+[ -d /netboot ] && rm -rf /netboot
+echo "$1"
+exit 1
+}
+
+servers(){
+	echo Please leave this terminal open
+	udhcpd /netboot/udhcpd.conf &
+	udpsvd -E 0 69 tftpd /netboot
+}
+
+checkroot
+
+# Unset the variables that are checked for in while-loops
+unset STARTIP
+unset ENDIP
+unset IFACE
+unset SUBNET
+
+# Say hi
+clear
+printf "\t${YELLOW}Welcome to the Tiny Core Terminal Server\n"
+echo
+echo "${GREEN}This box is about to become a mothership for all your net-booting computers."
+
+if [ -d /netboot ]; then
+
+	echo
+	echo "Existing config detected. Overwrite? [y/n]"; read OVERWRITE
+
+	case $OVERWRITE in
+		y*) true ;;
+		*) servers; exit ;;
+	esac
+fi
+
+# Cleansing is important
+rm -rf /netboot
+mkdir -p /netboot/pxelinux.cfg
+
+# Where'd you boot from?
+echo
+echo "Give the full path to your boot device (example ${YELLOW}/dev/sda1${GREEN} or ${YELLOW}/dev/hdc1${GREEN})"
+echo "The kernel and ${ROOTFS}.gz will be copied off it."
+echo
+echo -n "Boot device?${NORMAL} "; read BOOTFROM
+
+# Checks & copying to ram
+case `cat /proc/mounts` in
+	*$BOOTFROM* )
+	true ;;
+	* )
+	mount $BOOTFROM || fail "Failed to mount $BOOTFROM" ;;
+esac
+
+PREPATH="$(find /mnt/${BOOTFROM##*/} -name "$ROOTFS".gz)"
+AFTERMATH="${PREPATH%/"$ROOTFS".gz}"
+
+[ -n "$PREPATH" ] || fail "Can't find kernel! Aborting!"
+
+cp $AFTERMATH/vmlinuz /netboot
+cp $AFTERMATH/"$ROOTFS".gz /netboot
+cp /usr/share/syslinux/pxelinux.0 /netboot
+
+# Ask for da conf: ip, subnet, the deal
+while [ -z "$STARTIP" ]; do
+	echo
+	echo "${GREEN}First IP address to share. ${YELLOW}192.168.0.30${GREEN} is a good one."
+	echo -n "First IP?${NORMAL} "; read STARTIP
+done
+
+while [ -z "$ENDIP" ]; do
+	echo
+	echo "${GREEN}The last IP to share. ${YELLOW}192.168.0.60${GREEN} suggested"
+	echo -n "Last IP?${NORMAL} "; read ENDIP
+done
+
+while [ -z "$IFACE" ]; do
+	echo
+	echo "${GREEN}The netcard to use. ${YELLOW}eth0${GREEN}, for example."
+	echo -n "Netcard to use?${NORMAL} "; read IFACE
+done
+
+# Check for the host's IP here, to avoid further questions if it's wrong
+MYIP=`ifconfig $IFACE | grep inet | cut -d":" -f2 | cut -d" " -f1`
+[ -n "$MYIP" ] || fail "$IFACE doesn't have an IP set"
+
+echo
+echo "${GREEN}DNS servers to share. ${YELLOW}If you have many, separate with a space${GREEN}"
+echo -n "DNS server(s) to share?${NORMAL} "; read DNS
+
+while [ -z "$SUBNET" ]; do
+	echo
+	echo "${GREEN}Subnet of shared IPs. ${YELLOW}255.255.255.0${GREEN} is correct for 192.168..."
+	echo -n "Subnet of shared IPs?${NORMAL} "; read SUBNET
+done
+
+echo
+echo "${GREEN}Gateway to share. ${YELLOW}Most likely the IP of your router${GREEN}."
+echo -n "Gateway to share?${NORMAL} "; read ROUTER
+
+echo
+echo -n "${GREEN}Any additional boot options?${NORMAL} "; read KERNELOPTIONS
+
+# Now, put those to good use
+echo "# The start and end of the IP lease block
+
+start 		$STARTIP
+end		$ENDIP
+
+# The interface that udhcpd will use
+
+interface	$IFACE
+
+boot_file /pxelinux.0
+opt	dns	$DNS
+option	subnet	$SUBNET
+opt	router	$ROUTER
+option	lease	864000		# 10 days of seconds
+option	tftp	$MYIP
+siaddr	$MYIP
+" > /netboot/udhcpd.conf
+
+# Pxelinux.conf
+echo "DEFAULT $ROOTFS
+TIMEOUT 300
+
+LABEL $ROOTFS
+KERNEL vmlinuz
+APPEND quiet $KERNELOPTIONS initrd=$ROOTFS.gz
+" > /netboot/pxelinux.cfg/default
+
+# Final check
+# A workaround for buggy busybox udhcpd
+ln -s /netboot/pxelinux.0 /netboot/pxelinux.0ÿ
+
+# If everything's OK, let's roll!
+servers

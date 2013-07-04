@@ -1,0 +1,22 @@
+#!/bin/busybox ash
+# (c) Robert Shingledecker 2010
+. /etc/init.d/tc-functions
+useBusybox
+[ -z $1 ] && exit 1
+TARGET=$1 && EXTN=${1##/*/}
+shift 1
+APP=${EXTN%%.tcz}
+TCEDIR=/etc/sysconfig/tcedir
+[ -d "$TCEDIR" ] || exit 1
+[ ${TARGET} == ${EXTN} ] && TARGET=${TCEDIR}/optional/${EXTN}
+[ ${EXTN} == ${APP} ] && TARGET=${TARGET}.tcz
+if [ ! -e /usr/local/tce.installed/${APP} ]; then
+  tce-load -is ${TARGET}
+fi
+if [ -f /usr/local/share/applications/${APP}.desktop ]; then
+  RUN=`cat /usr/local/share/applications/${APP}.desktop | grep Exec | cut -f2 -d=`
+  exec ${RUN} "$@"
+else
+  [ $(which ${APP} ) ] && exec ${APP} "$@"
+fi
+

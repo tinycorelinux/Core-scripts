@@ -1,0 +1,8 @@
+#!/bin/busybox ash
+. /etc/init.d/tc-functions
+useBusybox
+#
+# Fake history command for Ash.
+#
+
+cat $HOME/.ash_history 2>/dev/null || echo "No history file found..."

@@ -1,0 +1,588 @@
+#!/bin/busybox ash
+# RC Script for Tiny Core Linux
+# (c) Robert Shingledecker 2004-2012
+# Several modifications for speed by Curaga
+. /etc/init.d/tc-functions
+useBusybox
+
+USER="tc"
+TCEDIR="/tmp/tce"
+TCLOOP="/tmp/tcloop"
+TCEINSTALLED="/usr/local/tce.installed"
+INSTALLED=""
+VERSION="$(cat /usr/share/doc/tc/release.txt)"
+KERNEL="$(uname -r)"
+
+addUser(){
+	echo "${GREEN}Adding user ${YELLOW} $USER ${NORMAL}"
+	/bin/adduser -s /bin/sh -G staff -D "$USER"
+	echo "$USER":tcuser | /usr/sbin/chpasswd -m
+	echo -e "$USER\tALL=NOPASSWD: ALL" >> /etc/sudoers
+	setupHome
+}
+
+### END functions
+
+# Main
+
+clear                               
+echo "${GREEN}Booting ${YELLOW}Core $VERSION ${NORMAL}"
+echo "${GREEN}Running Linux Kernel ${YELLOW}$KERNEL${GREEN}.${NORMAL}"
+export PATH=/usr/local/sbin:/usr/local/bin:"$PATH"
+
+# Here we check all the boot parameters using the fastest way known to men, case & loop
+echo -n "${BLUE}Checking boot options...${NORMAL}"
+for i in `cat /proc/cmdline`; do
+	case $i in
+		*=*)
+			case $i in
+				waitusb*) WAITUSB=${i#*=} ;;
+				lang*) LANGUAGE=${i#*=} ;;
+				kmap*) KEYMAP=${i#*=} ;;
+				tz*) TZ=${i#*=} ;;
+				desktop*) DESKTOP=${i#*=} ;;
+				icons*) ICONS=${i#*=} ;;
+				noicons*) NOICONS=${i#*=} ;;
+				user*) USER=${i#*=} ;;
+				home*) MYHOME=${i#*=} ;;
+				tcvd*) TCVD=${i#*=} ;;
+				opt*) MYOPT=${i#*=} ;;
+				swapfile*) SWAPFILE=${i#*=} ;;
+				resume*) RESUME=${i#*=} ;;
+				host*) HOST=1 ;;
+				nfsmount* ) NFSMOUNT=${i#*=} ;;
+				tftplist* ) TFTPLIST=${i#*=} ;;
+				httplist* ) HTTPLIST=${i#*=} ;;
+				aoe* ) AOE=${i#*=} ;;
+				nbd* ) NBD=${i#*=} ;;
+				mydata* ) MYDATA=${i#*=} ;;
+				pretce* ) PRETCE=${i#*=} ;;
+				xvesa* ) XVESA=${i#*=} ;;
+				rsyslog=* ) RSYSLOG=${i#*=}; SYSLOG=1 ;;
+				blacklist* ) BLACKLIST="$BLACKLIST ${i#*=}" ;;
+				iso* ) ISOFILE=${i#*=} ;;
+			esac
+		;;
+		*)
+			case $i in
+				nozswap) NOZSWAP=1 ;;
+				nofstab) NOFSTAB=1 ;;
+				nortc) NORTC=1 ;;
+				syslog) SYSLOG=1 ;;
+				noutc) NOUTC=1 ;;
+				nodhcp) NODHCP=1 ;;
+				noicons) NOICONS=1 ;;
+				text) TEXT=1 ;;
+				xonly) XONLY=1 ;;
+				superuser) SUPERUSER=1 ;;
+				noswap) NOSWAP=1 ;;
+				secure) SECURE=1 ;;
+				protect) PROTECT=1 ;;
+				cron) CRON=1 ;;
+				xsetup) XSETUP=1 ;;
+				laptop) LAPTOP=1 ;;
+				base) ONLYBASE=1 ;;
+				showapps) SHOWAPPS=1 ;;
+				norestore) NORESTORE=1 ;;
+				noautologin) NOAUTOLOGIN=1 ;;
+				pause) PAUSE=1 ;;
+			esac
+		;;
+	esac
+done
+echo "${GREEN}Done.${NORMAL}"
+
+if [ -n "$BLACKLIST" ]; then
+	mkdir -p /etc/modprobe.d
+	for i in $BLACKLIST; do
+		echo "$i" | tr ',' '\n' | while read j ; do
+			echo "blacklist $j" >> /etc/modprobe.d/blacklist.conf
+		done
+	done
+fi
+
+# Start Udev to populate /dev and handle hotplug events
+echo -n "${BLUE}Starting udev daemon for hotplug support...${NORMAL}"
+#/sbin/udevd --daemon 2>/dev/null >/dev/null
+/sbin/udevd --daemon 2>&1 >/dev/null
+#/sbin/udevadm trigger --action=add 2>/dev/null >/dev/null &
+/sbin/udevadm trigger --action=add 2>&1 >/dev/null &
+rotdash $!
+echo "${GREEN}Done.${NORMAL}"
+
+[ -n "$WAITUSB" ] && (
+	case $WAITUSB in
+		*:*) dev=${WAITUSB#*:}
+		timeout=$((${WAITUSB%:*} * 4))
+		while [ $timeout -gt 0 ]; do
+			echo -en "${BLUE}\rWaiting as requested ... ${NORMAL}$(($timeout / 4)) "
+			timeout=$(($timeout - 1))
+			sleep 0.25
+			blkid -lt $dev >/dev/null && timeout=0
+		done
+		echo
+		;;
+		*) sleep "$WAITUSB" ;;
+	esac
+)
+
+modprobe loop 2>/dev/null
+#modprobe ohci_hcd
+
+if [ -n "$NOZSWAP" ]; then
+	echo "${BLUE}Skipping compressed swap in ram as requested from the boot command line.${NORMAL}"
+else
+	modprobe -q zram
+	modprobe -q zcache
+
+	while [ ! -e /dev/zram0 ]; do usleep 50000; done
+	grep MemFree /proc/meminfo | awk '{print $2/4 "K"}' > /sys/block/zram0/disksize
+
+	mkswap /dev/zram0 >/dev/null 2>&1
+	swapon /dev/zram0
+	echo "/dev/zram0  swap         swap    defaults,noauto   0       0" >> /etc/fstab # Lets swapoff -a work
+fi
+
+if [ -n "$NOFSTAB" ]; then
+	echo "${BLUE}Skipping /etc/fstab creation as requested from the boot command line.${NORMAL}"
+else
+	echo "${BLUE}Scanning hard disk partitions to create ${YELLOW}/etc/fstab ${NORMAL}"
+	/usr/sbin/rebuildfstab & fstab_pid=$!
+	mv /tmp/98-tc.rules /etc/udev/rules.d/. 2>/dev/null
+	/sbin/udevadm control --reload-rules &
+fi
+
+if [ -n "$SYSLOG" ]; then
+	 [ -z "$RSYSLOG" ] || SOPTS=" -L -R $RSYSLOG "
+	 /sbin/syslogd ${SOPTS} && echo "${GREEN}syslog started.${NORMAL}"
+	 /sbin/klogd && echo "${GREEN}klog started."
+fi
+
+[ -n "$LANGUAGE" ] || LANGUAGE="C"
+echo -n "${GREEN}Setting Language to ${MAGENTA}$LANGUAGE"
+echo "LANG=$LANGUAGE" > /etc/sysconfig/language
+export LANG=$LANGUAGE
+echo "${GREEN} Done.${NORMAL}"
+
+if [ -n "$TZ" ]; then
+	echo -n "${GREEN}Setting Timezone to ${MAGENTA}$TZ"
+	export TZ && echo "TZ=$TZ" > /etc/sysconfig/timezone
+	echo "${GREEN} Done.${NORMAL}"
+fi	
+
+if [ -n "$NORTC" ]; then
+	echo "${BLUE}Skipping rtc as requested from the boot command line.${NORMAL}"
+else
+	while [ ! -e /dev/rtc0 ]; do usleep 50000; done
+	if [ -n "$NOUTC" ]; then
+		hwclock -l -s &
+	else
+		hwclock -u -s &
+	fi
+fi
+
+if [ -n "$HOST" ]; then
+	sethostname
+else
+	/bin/hostname -F /etc/hostname
+fi
+
+/sbin/ifconfig lo 127.0.0.1 up
+/sbin/route add 127.0.0.1 lo &
+
+if [ -n "$AOE" ]; then
+	IFACE=$( echo $AOE | awk -F: '{ print $1 }')
+	DEV=$( echo $AOE | awk -F: '{ print $2 }')
+	ifconfig $IFACE up
+	modprobe aoe
+	echo "${BLUE}Waiting for $DEV${NORMAL}"
+	CNT=120
+	until [ -e /dev/etherd/interfaces ]
+	do
+		[ $((--CNT)) -le 0 ] && break
+		echo -ne "${RED}$CNT  \r"
+		sleep 1
+	done
+	printf "%s\0" $IFACE > /dev/etherd/interfaces
+	echo > /dev/etherd/discover
+	until [ -e /dev/etherd/$DEV ]
+	do
+		[ $((--CNT)) -le 0 ] && break
+		echo -ne "${RED}$CNT  \r"
+		sleep 1
+	done
+	if [ $CNT -gt 0 ] ; then
+		ln -s /dev/etherd/$DEV /dev/$DEV
+		mkdir -p /mnt/$DEV
+		mount /dev/$DEV /mnt/$DEV >/dev/null 2>&1
+	else
+		echo -ne "\n$DEV NOT mounted! Press <ENTER>" ; read junk
+	fi
+	echo "${NORMAL}"
+fi
+
+# dhcp.sh runs udhcpc async, so it exits before network is up
+wait4Server() {
+	/etc/init.d/dhcp.sh
+	SERVER=$1 ; NOPING=$2 ; CNT=0
+	if [ "$NOPING" == "1" ] ; then
+		until ifconfig | grep -q Bcast
+		do
+			[ $((CNT++)) -gt 60 ] && break || sleep 1
+		done
+		sleep 1
+	else
+		until ping -c 1 $SERVER >/dev/null 2>&1     
+		do
+			[ $((CNT++)) -gt 60 ] && break || sleep 1
+		done
+	fi
+	DHCP_RAN=1
+}
+
+if [ -n "$USER" ]; then
+	if ! grep "$USER" /etc/passwd >/dev/null; then addUser; fi
+else
+	USER="tc"
+fi
+echo "$USER" > /etc/sysconfig/tcuser
+mkdir -p /home/"$USER"
+if [ -n "$SUPERUSER" ]; then
+	touch /etc/sysconfig/superuser
+fi
+
+# Setup base directories for TCE Applicatons 
+[ -d "$TCEINSTALLED" ] || mkdir "$TCEINSTALLED"
+[ -d "$TCEDIR" ] || mkdir "$TCEDIR"
+[ -d "$TCLOOP" ] || mkdir "$TCLOOP"
+ln -sf "$TCEDIR" /etc/sysconfig/tcedir
+chgrp staff "$TCEDIR" "$TCEINSTALLED" "$TCLOOP"
+chmod g+w "$TCEDIR" "$TCEINSTALLED" "$TCLOOP"
+
+chmod u+s /bin/busybox /usr/bin/sudo
+
+get_app() {
+	PROTO=$1
+	HOST=${2%%/*}
+	REST=${2#*/}
+	LENG=$((${#HOST}-1)) ; LAST=${HOST:$LENG:1}
+	[ "$LAST" == ":" ] && HOST=${HOST:0:$LENG}
+	FILE=${REST%:*}
+	NAME=${FILE##*/}
+	OPTS=${REST#*:}
+	[ "$OPTS" == "no-ping" ] && NOPING=1 || NOPING=0
+	[ -z "$DHCP_RAN" ] && wait4Server $HOST $NOPING
+	(	TCE=/tmp/tce
+		cd $TCE
+		[ "$PROTO" = "TFTP" ] && tftp -g -r $FILE $HOST
+		[ "$PROTO" = "HTTP" ] && wget -q http://${HOST}/${FILE}
+		[ $SHOWAPPS ] && echo -ne "${BLUE}TFTP Loading Extensions ${YELLOW}"
+		dos2unix -u $NAME
+		while read FILE FL
+		do
+			APP=${FILE##*/}
+			[ "$PROTO" = "TFTP" ] && tftp -g -r $FILE $HOST
+			[ "$PROTO" = "HTTP" ] && wget -q http://${HOST}/${FILE}
+			[ $SHOWAPPS ] && echo -ne "$APP "
+			su "$USER" -c "/usr/bin/tce-load -i $FL $TCE/$APP"
+			[ "$FL" == "-c" ] && rm $APP
+		done < $NAME
+		[ $SHOWAPPS ] && echo "${GREEN} Done.${NORMAL}"
+		rm $NAME
+	)
+}
+
+# First process tftp and http entries
+modprobe -q squashfs 2>/dev/null
+[ -n "$TFTPLIST" ] && get_app "TFTP" $TFTPLIST
+[ -n "$HTTPLIST" ] && get_app "HTTP" $HTTPLIST
+
+if [ -n "$NFSMOUNT" ]; then
+	SERVER=$( echo $NFSMOUNT | awk -F: '{ print $1 }')
+	DIR=$(    echo $NFSMOUNT | awk -F: '{ print $2 }')
+	OPTS=$(   echo $NFSMOUNT | awk -F: '{ print $3 }')
+	[ "$OPTS" == "no-ping" ] && NOPING=1 || NOPING=0
+	[ -z "$DHCP_RAN" ] && wait4Server $SERVER $NOPING
+	wait $fstab_pid
+	echo "${SERVER}:${DIR} /mnt/nfs nfs defaults,nolock 0 0" >> /etc/fstab
+	[ $SHOWAPPS ] && echo "Mounting ${SERVER}:${DIR}"
+	mkdir /mnt/nfs
+	mount /mnt/nfs >/dev/null 2>&1
+fi
+
+touch /var/tmp/k5_skip
+if [ -n "$NBD" ]; then
+	modprobe -q nbd
+	SERVER=$( echo $NBD | awk -F: '{ print $1 }')
+	PORT=$(    echo $NBD | awk -F: '{ print $2 }')
+	OPTS=$(   echo $NBD | awk -F: '{ print $3 }')
+	[ "$OPTS" == "no-ping" ] && NOPING=1 || NOPING=0
+	[ -z "$DHCP_RAN" ] && wait4Server $SERVER $NOPING
+	nbd-client $SERVER $PORT /dev/nbd0
+	mkdir /mnt/nbd0
+	mount /dev/nbd0 /mnt/nbd0 2>&1
+	pidof nbd-client nbd0 >> /var/tmp/k5_skip
+fi
+
+if grep -q "^/dev/root" /proc/mounts; then
+	INSTALLED=1
+	echo "${RED}Detected Traditional Hard drive installation.${NORMAL}"
+fi
+
+/sbin/ldconfig 2>/dev/null
+
+[ -n "$TEXT" ] && touch /etc/sysconfig/text
+[ -n "$XONLY" ] && touch /etc/sysconfig/xonly
+
+#Check for Virtual Hard Drive
+if [ -n "$TCVD" ]; then
+	wait $fstab_pid
+	TCVD="${TCVD#/}"
+	TCVD="${TCVD#dev/}"
+	TCVD_DEVICE="${TCVD%%/*}"
+	TCVD_LOOPFILE="${TCVD#*/}"
+	if [ "$TCVD_DEVICE" == "$TCVD_LOOPFILE" ]; then
+		TCVD_DEVICE="$(autoscan $TCVD_LOOPFILE 'f')"
+	fi   
+	PARTITION="${TCVD_DEVICE##/dev/}"
+	find_mountpoint "$PARTITION"
+	if [ -n "$MOUNTPOINT" ]; then
+		[ "$MOUNTED" == "yes" ] || /bin/mount "$MOUNTPOINT"
+		usleep_progress
+		if [ -f "$MOUNTPOINT"/"$TCVD_LOOPFILE" ]; then
+			[ -d /mnt/tcvd ] || /bin/mkdir /mnt/tcvd
+			ln -sf "$MOUNTPOINT"/"$TCVD_LOOPFILE" /dev/tcvd
+			printf "/dev/tcvd \t/mnt/tcvd \text2\tloop\t0 0 #Added by TC\n" >> /etc/fstab
+			sync
+		fi
+	fi
+fi  
+
+# Preload drivers needed for tce/opt/home on lvm/RAID etc
+if [ -n "$PRETCE" ]; then
+	PPATH=${PRETCE%%/*}
+	mkdir -p /mnt/$PPATH
+	mount /dev/$PPATH /mnt/$PPATH
+	SRC=/mnt/$PRETCE
+	RAM=/tmp/tce
+	if [ -f $SRC/copy2fs.flg ] ; then
+		CPTOFS=1
+		mkdir -p $RAM/optional
+		cp $SRC/optional/* $RAM/optional/
+		cp $SRC/onboot.lst $RAM/
+		SRC=$RAM
+		umount /mnt/$PPATH 2>/dev/null
+	fi
+	while read NAME
+	do
+		[ "$CPTOFS" ] || grep -q $NAME $SRC/copy2fs.lst 2>/dev/null && FL="-c" || FL='' 
+		su "$USER" -c "/usr/bin/tce-load -i $FL $SRC/optional/$NAME"
+	done < $SRC/onboot.lst
+	umount /mnt/$PPATH 2>/dev/null
+	[ "$CPTOFS" ] && rm -rf $RAM/*
+fi
+
+unset HOME_SETUP
+if [ -n "$MYHOME" ]; then
+	wait $fstab_pid
+	PARTITION=${MYHOME##/dev/}
+	find_mountpoint "$PARTITION"
+	if [ -n "$MOUNTPOINT" ]; then
+		[ "$MOUNTED" == "yes" ] || mount "$MOUNTPOINT"
+
+		MS_MNTS=`mount|awk '$5~/fat|vfat|msdos|ntfs/{printf "%s ",$3}'`
+		case "$MS_MNTS" in 
+			*"$MOUNTPOINT"* )
+				echo "Persistent HOME not supported on Microsoft File Systems."
+				echo "${YELLOW}Request for persistent HOME on $PARTITION ignored."
+				echo -n "${RED}Press Enter key.${NORMAL}"; read ans
+			;;
+			* )
+				if [ -d "$MOUNTPOINT/home/$USER" ]; then
+					mount --bind "$MOUNTPOINT/home" /home
+					HOME_SETUP=1
+				else
+					mkdir -p "$MOUNTPOINT/home/$USER"
+					mount --bind "$MOUNTPOINT/home" /home
+				fi
+			;;
+		esac
+
+	else
+		echo "Invalid device specified. Ignoring persistent HOME request!"
+	fi
+fi
+
+[ ! "$HOME_SETUP" ] && setupHome
+
+unset OPT_SETUP
+if [ -n "$MYOPT" ]; then
+	wait $fstab_pid
+	PARTITION=${MYOPT##/dev/}
+	find_mountpoint "$PARTITION"
+	if [ -n "$MOUNTPOINT" ]; then
+		[ "$MOUNTED" == "yes" ] || mount "$MOUNTPOINT"
+
+		MS_MNTS=`mount|awk '$5~/fat|vfat|msdos|ntfs/{printf "%s ",$3}'`
+		case "$MS_MNTS" in 
+			*"$MOUNTPOINT"* )
+				echo "Persistent OPT not supported on Microsoft File Systems."
+				echo "${YELLOW}Request for persistent OPT on $PARTITION ignored."
+				echo -n "${RED}Press Enter key.${NORMAL}"; read ans
+			;;
+			* )
+				[ -d "$MOUNTPOINT"/opt ] || mkdir "$MOUNTPOINT"/opt
+				yes n | cp -ai /opt/. "$MOUNTPOINT"/opt/ 2>/dev/null
+				mount --bind "$MOUNTPOINT"/opt/ /opt/
+				chgrp -R staff /opt/ >/dev/null 2>&1
+				chmod -R g+w /opt/ >/dev/null 2>&1
+				chmod g+s /opt/ >/dev/null 2>&1
+			;;
+		esac
+
+	else
+		echo "Invalid device specified. Skipping persistent OPT request!"
+	fi
+fi
+
+[ -n "$XSETUP" ] && touch /tmp/xsetup_requested
+
+if [ -n "$LAPTOP" ]; then
+	modprobe ac && modprobe battery 2>/dev/null
+	modprobe yenta_socket >/dev/null 2>&1 || modprobe i82365 >/dev/null 2>&1
+	/sbin/udevadm trigger 2>/dev/null >/dev/null &
+	echo " ${GREEN}Laptop options enabled (AC,Battery, & PCMCIA).${NORMAL}"
+fi
+
+if [ -n "$NOSWAP" ]; then
+	echo "${BLUE}Ignoring swap partition(s) seek as requested.${NORMAL}"
+else
+	wait $fstab_pid
+	/sbin/swapon -a 2>/dev/null
+	if [ "$?" == 0 ]; then echo "${GREEN}Possible swap partition(s) enabled.${NORMAL}"; fi
+fi
+
+if [ -n "$SWAPFILE" ]; then
+	wait $fstab_pid
+	SWAPFILE=${SWAPFILE##/dev/}
+	find_mountpoint "$SWAPFILE"
+	if [ -n "$MOUNTPOINT" ]; then
+		if [ "$MOUNTED" == "yes" ]; then
+			swapon "$MOUNTPOINT"/tc.swp
+		else
+			mount "$MOUNTPOINT" && swapon "$MOUNTPOINT"/tc.swp
+		fi
+	fi
+fi
+
+if [ -n "$RESUME" ]; then
+	rm -f /etc/sysconfig/tc.resume 2>/dev/null
+	RESUME=`basename $RESUME`
+	SWAP_SIZE=$(cat /proc/swaps | grep "$RESUME" | awk '{print $3}')
+	[ -z "$SWAP_SIZE" ] && /sbin/swapon /dev/"$RESUME" &&  SWAP_SIZE=$(cat /proc/swaps | grep "$RESUME" | awk '{print $3}')
+	[ -z "$SWAP_SIZE" ] && exit 1
+	MEM_SIZE=$(cat /proc/meminfo | awk '/MemTotal/{print $2}')
+	if [ $SWAP_SIZE -gt $MEM_SIZE ]; then
+		grep -q disk /sys/power/state &&  echo "disk" > /etc/sysconfig/tc.resume
+	fi
+fi
+
+if [ "$NOICONS" == 1 ]; then
+	> /etc/sysconfig/icons
+else  
+# If icon manager is specified use that
+	if [ -n "$ICONS" ]; then
+		echo "$ICONS" > /etc/sysconfig/icons
+	else
+		[ -s /etc/sysconfig/icons ] && ICONS=`cat /etc/sysconfig/icons`
+	fi
+fi  
+[ "$NOICONS" == "ondemand" ] && touch /etc/sysconfig/noondemandicons
+sync
+
+wait $fstab_pid
+MSSG="${BLUE}Loading extensions...${NORMAL}"
+if [ -n "$SHOWAPPS" ]; then
+	touch /etc/sysconfig/showapps
+	echo "$MSSG"
+	/usr/bin/tce-setup "booting" 
+	[ -n "$ISOFILE" ] && /usr/bin/fromISOfile "$ISOFILE"
+	rm /etc/sysconfig/showapps
+	echo "${GREEN}Done.${NORMAL}"
+else
+	echo -n "$MSSG"
+	/usr/bin/tce-setup "booting" > /dev/null 2>&1 & 
+	rotdash $!
+	[ -n "$ISOFILE" ] && /usr/bin/fromISOfile "$ISOFILE" > /dev/null 2>&1 &
+	rotdash $!
+	echo "${GREEN}Done.${NORMAL}"
+	if [ -s /tmp/aberr ]; then
+		echo "${RED}Warning! Errors occured during the loading of the extensions.${YELLOW}"
+		cat /tmp/aberr
+		echo -n "${RED}Press Enter key.${NORMAL}"; read ans
+	fi
+fi
+
+[ -n "$KEYMAP" ] || KEYMAP="us"
+if [ -f "/usr/share/kmap/$KEYMAP.kmap" ]; then
+	echo -n "${GREEN}Setting keymap to ${MAGENTA}$KEYMAP"
+	/sbin/loadkmap < /usr/share/kmap/$KEYMAP.kmap
+	echo "KEYMAP=$KEYMAP" > /etc/sysconfig/keymap
+	echo "${GREEN} Done.${NORMAL}"
+fi
+
+if [ -n "$SECURE" ]; then
+	getpasswd "root"
+	echo "root:$PASSWD" | chpasswd -m
+	getpasswd "$USER"
+	echo "$USER:$PASSWD" | chpasswd -m
+fi
+if [ -n "$PROTECT" ]; then
+	getpasswd "encryption"
+	echo "$PASSWD" > /etc/sysconfig/bfe
+	chown ${USER}:root /etc/sysconfig/bfe
+	chmod 600 /etc/sysconfig/bfe
+fi
+
+[ -n "$XVESA" ]  && sed -i 's/1024x768x32/'"$XVESA"'/' /home/"$USER"/.xsession 2>/dev/null
+
+# If desktop is specified use that
+if [ -n "$DESKTOP" ]; then
+	echo "$DESKTOP" > /etc/sysconfig/desktop
+else
+	[ -s /etc/sysconfig/desktop ] && DESKTOP=`cat /etc/sysconfig/desktop`
+fi
+
+# If restore then also pass TCE directory for quick look of mydata.tgz backupfile
+if [ -n "$MYDATA" ]; then
+	echo "$MYDATA" > /etc/sysconfig/mydata
+else
+	echo "mydata" > /etc/sysconfig/mydata
+fi   
+if [ -n "$NORESTORE" ]; then
+	echo "${GREEN}Skipping restore as requested from the command line.${NORMAL}"
+else
+	TCEDIR=`readlink /etc/sysconfig/tcedir`
+	/etc/init.d/tc-restore.sh "$TCEDIR"
+fi
+
+# After restore items
+if [ -n "$NODHCP" ]; then
+	echo "${GREEN}Skipping DHCP broadcast/network detection as requested on boot commandline.${NORMAL}"
+else
+	[ -z "$DHCP_RAN" ] && /etc/init.d/dhcp.sh &
+	[ -z "$NORTC" ] || /etc/init.d/settime.sh &
+fi
+
+[ -n "$CRON" ] && /etc/init.d/services/crond start
+
+/sbin/loadcpufreq 2>/dev/null &
+
+/opt/bootsync.sh
+
+[ -n "$NOAUTOLOGIN" ] && echo "booting" > /etc/sysconfig/noautologin
+
+if [ -n "$PAUSE" ]; then
+	echo -n "${BLUE}Boot time configuration completed. Press <Enter> to continue.${NORMAL}"
+	read junk
+fi

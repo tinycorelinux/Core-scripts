@@ -1,0 +1,306 @@
+#!/bin/busybox ash
+# (c) Robert Shingledecker 2004-2010
+# tcz concept and code from Jason Williams
+#
+. /etc/init.d/tc-functions
+useBusybox
+checknotroot
+PROG_NAME=$(basename $0)
+KERNELVER=$(uname -r)
+unset WGET INSTALL COPYINSTALL BOOTING ONDEMAND DOWNLOAD_ONLY LOAD_ONLY SUPPRESS
+FORCE="n"  # Overwrite system files default to no. Use -f to force overwrite.
+SAVED_DIR=`pwd`
+
+ONBOOTNAME="$(getbootparam lst 2>/dev/null)"
+[ -n "$ONBOOTNAME" ] || ONBOOTNAME="onboot.lst"
+
+abort(){
+	echo "Version `version`";
+	echo "Usage: ${PROG_NAME} [ -i -w -wi -wo -wil -ic -wic -wicl]{s} extensions"
+	echo "  -i   Loads local extension"
+	echo "  -w   Download extension only"
+	echo "  -wi  Download and install extension"
+	echo "  -wo  Download and create an ondemand item"
+	echo "  Adding -c to any -i option will force a one time copy to file system"
+	echo "  Adding -l to any -i option indicates load only - do not update onboot or ondemand"
+	echo "  Adding -s to any option will suppress OK message used by apps GUI"
+	echo -e  "\nExample usage:"
+	echo " Load local extension:"
+	echo "   tce-load -i /mnt/hda1/tce/optional/nano.tcz"
+	echo " Download into tce/optional directory, updates OnBoot and installs:"
+	echo "   tce-load -w -i nano.tcz"
+	echo " Download only into tce/optional directory:"
+ 	echo "   tce-load -w nano.tcz"
+	exit 2
+}
+
+abort_to_saved_dir(){
+	cd "$SAVED_DIR"
+	echo "1" > /tmp/appserr
+	exit 1
+}
+
+while getopts wilcbosf OPTION
+do
+	case ${OPTION} in
+		w) WGET=TRUE ;;
+		i) INSTALL=TRUE ;;
+		l) LOAD_ONLY=TRUE ;;
+		c) COPYINSTALL=TRUE ;;
+		b) BOOTING=TRUE ;;
+		o) ONDEMAND=TRUE ;;
+		s) SUPPRESS=TRUE ;;
+		f) FORCE="y" ;;
+		*) abort ;;
+	esac
+done
+shift `expr $OPTIND - 1`
+[ -z "$1" ] || ( [ -z "$WGET" ] && [ -z "$INSTALL" ] ) && abort
+
+app_exists() {
+	EXISTS=1
+	if [ -f "$TCEDIR"/optional/"$TARGETAPP" ]
+	then
+		if [ -f "$TCEDIR"/optional/"$TARGETAPP".md5.txt ]
+		then
+			cd "$TCEDIR"/optional
+			md5sum -cs "$TCEDIR"/optional/"$TARGETAPP".md5.txt
+			EXISTS="$?"
+			cd - > /dev/null
+		fi
+	fi
+	return "$EXISTS"
+}
+
+fetch_app() {
+	echo "Downloading: $1"
+	wget -cq "$MIRROR"/"$1".md5.txt 2>/dev/null
+	wget -c "$MIRROR"/"$1"
+	md5sum -c "$1".md5.txt
+	if [ "$?" != 0 ]; then
+		echo "Error on $1"
+		abort_to_saved_dir
+	fi
+}
+
+push_dep(){
+	DEPLIST="${1}/${DEPLIST}"
+}
+
+pop_dep(){
+	F="${DEPLIST%%/*}"
+	DEPLIST="${DEPLIST#*/}"
+}
+
+copyInstall() {
+	[ -d /mnt/test ] || sudo mkdir -p /mnt/test
+	sudo mount $1 /mnt/test -t squashfs -o loop,ro,bs=4096
+	if [ "$?" == 0 ]; then
+		if [ "$(ls -A /mnt/test)" ]; then
+			yes "$FORCE" | sudo cp -ai /mnt/test/. / 2>/dev/null
+			[ `find /mnt/test/ -type d -name modules` ] && MODULES=TRUE
+		fi
+		sudo umount -d /mnt/test
+	fi
+}
+
+update_system() {
+	if [ "$BOOTING" ]; then
+		[ "$MODULES" ] && sudo touch /etc/sysconfig/newmodules
+	else
+		[ "$THISAPP" != "$EXTENSION" ] || [ "$DOWNLOAD_ONLY" ] || [ "$LOAD_ONLY" ] || echo "$THISAPP" >> ../$ONBOOTNAME
+		if [ "$MODULES" ]; then
+			sudo depmod -a 2>/dev/null
+			sudo /sbin/udevadm trigger
+		fi
+		sudo /sbin/ldconfig 2>/dev/null
+	fi
+	if [ -x "$TCEINSTALLED"/$2 ]; then
+		if [ "$BOOTING" ] ; then
+			echo "$TCEINSTALLED"/$2 >> /tmp/setup.lst
+		else
+			sudo "$TCEINSTALLED"/$2
+		fi
+	else
+		touch "$TCEINSTALLED"/$2
+	fi
+}
+
+install(){
+	unset MODULES EMPTYEXT
+
+	if [ "$LANG" != "C" ]; then
+		LOCALEEXT="${1%.tcz}-locale.tcz"
+		[ -f "$LOCALEEXT" ] && install "$LOCALEEXT"
+	fi
+
+	THISAPP="$1"
+	APPNAME=$(getbasefile "$THISAPP" 1)
+
+	if [ "$INSTALL" ]; then
+		if [ "$COPYINSTALL" ] || [ -e "${FROMWHERE%/*}"/copy2fs.flg ] || grep -qw $APPNAME "${FROMWHERE%/*}"/copy2fs.lst 2>/dev/null; then
+			copyInstall "$THISAPP"
+			update_system "$THISAPP" "$APPNAME"
+			if [ ! "$BOOTING" ]; then
+				[ -s /etc/sysconfig/desktop ] && desktop.sh "$APPNAME"
+			fi
+		else
+			[ -d /tmp/tcloop/"$APPNAME" ] || sudo mkdir -p /tmp/tcloop/"$APPNAME"
+			awk -v appname="/tmp/tcloop/$APPNAME" ' { if ( $2 == appname )  exit 1 }' /etc/mtab
+			[ "$?" == 1 ] || sudo mount "$THISAPP" /tmp/tcloop/"$APPNAME" -t squashfs -o loop,ro,bs=4096 2>&1
+			[ "$?" == 0 ] || abort_to_saved_dir
+			[ -z "`ls /tmp/tcloop/${APPNAME}`" ] && EMPTYEXT=1
+			[ "`find /tmp/tcloop/${APPNAME} -mindepth 1 -maxdepth 2 | wc -l`" -le 1 ] && EMPTYEXT=1
+
+			if [ -z "$EMPTYEXT" ]; then
+				yes "$FORCE" | sudo cp -ais /tmp/tcloop/"$APPNAME"/* / 2>/dev/null
+				[ `find /tmp/tcloop/"$APPNAME" -type d -name modules` ] && MODULES=TRUE
+				update_system "$THISAPP" "$APPNAME"
+				if [ ! "$BOOTING" ]; then
+					[ -s /etc/sysconfig/desktop ] && desktop.sh "$APPNAME"
+				fi
+			else
+				umount -d /tmp/tcloop/"$APPNAME"
+				update_system "$THISAPP" "$APPNAME"
+			fi
+		fi
+		[ "$BOOTING" ] && [ "$SHOWAPPS" ] && echo -n "${YELLOW}$APPNAME ${NORMAL}"
+	fi
+}
+
+local_recursive_scan() {
+	EXT="${1//-KERNEL.tcz/-${KERNELVER}.tcz}"
+	push_dep ${EXT}
+	deps=""
+	if [ -f ${EXT}.dep ]; then
+		deps=$( cat ${EXT}.dep )
+		for d in $deps; do
+			local_recursive_scan $d
+		done
+	fi
+}
+
+remote_recursive_scan() {
+	EXT="${1//-KERNEL.tcz/-${KERNELVER}.tcz}"
+	push_dep ${EXT}
+	deps=""
+	deps=$( cat "${FROMWHERE}/${EXT}.dep" )
+	for d in $deps; do
+		d="${d//-KERNEL.tcz/-${KERNELVER}.tcz}"
+		push_dep ${d}
+		if [ ! -f ${d}.dep ]; then
+			wget -c -P "$FROMWHERE" "$MIRROR"/"$d".dep 2>/dev/null
+			if [ "$?" == 0 ]; then
+				[ "$SUPPRESS" ] || echo ${d}.dep OK
+				remote_recursive_scan $d
+			fi
+		else
+			remote_recursive_scan $d
+		fi
+	done
+}
+
+# Main
+echo "0" > /tmp/appserr
+TCEDIR=/etc/sysconfig/tcedir
+[ -d "$TCEDIR" ] || exit 1
+[ -n "$1" ] || exit 1
+[ -f /etc/sysconfig/showapps ] && SHOWAPPS=TRUE && SUPPRESS=TRUE
+TCEINSTALLED=/usr/local/tce.installed
+#  Check for download only
+[ -z "$INSTALL" ] && DOWNLOAD_ONLY=1
+[ -z "$WGET" ] && [ "$INSTALL" ] && LOAD_ONLY=1
+
+for TARGETAPP in $@; do
+
+APPNAME=${TARGETAPP%%.tcz}
+if [ ${TARGETAPP} == ${APPNAME} ]; then TARGETAPP=${TARGETAPP}.tcz; fi
+APPNAME="${APPNAME/-KERNEL/-${KERNELVER}}"
+TARGETAPP="${TARGETAPP/-KERNEL.tcz/-${KERNELVER}.tcz}"
+
+# If load local or install then also check if already installed.
+# Download only OK.
+if [ "$INSTALL" ] && [ ! "$BOOTING" ]; then
+	if [ -f /usr/local/tce.installed/"${APPNAME##/*/}" ]; then
+		echo "$APPNAME is already installed!"
+		continue
+	fi
+fi
+
+if [ "$WGET" ]; then
+	if app_exists
+	then
+		echo "$APPNAME is already downloaded."
+		continue
+	fi
+	getMirror
+	[ -d "$TCEDIR"/optional ] || mkdir -p "$TCEDIR"/optional
+	FROMWHERE="$TCEDIR"/optional
+	cd "$FROMWHERE"
+	EXTENSION=`basename "$TARGETAPP"`
+
+	DEPLIST="$EXTENSION".dep
+	[ -f "$DEPLIST" ] && [ ! -f "$EXTENSION" ] && rm -f "$DEPLIST"
+	wget -cq "$MIRROR"/"$DEPLIST" 2>/dev/null
+	if [ "$?" == 0 ]; then
+		DEPLIST=""
+		remote_recursive_scan ${EXTENSION}
+		pop_dep
+		while [ "$F" ]; do
+			F="${F##*/}"
+			[ -f "$F" ] || fetch_app "$F"
+			md5sum -cs "$F".md5.txt
+			[ "$?" == 0 ] || fetch_app "$F"
+			[ -f /usr/local/tce.installed/"${F%.tcz}" ] || install "$F"
+			pop_dep
+		done
+		DEPLIST=""
+	else
+		fetch_app "$EXTENSION"
+		install "$EXTENSION"
+	fi
+	[ "$DOWNLOAD_ONLY" ] && [ "$ONDEMAND" ] && ondemand "$EXTENSION"
+fi
+
+# if local install then also check for .dep at the same location.
+if [ -z "$WGET" ]; then
+	if [ ! -f "$TARGETAPP" ]; then
+		if [ -f "$TCEDIR"/optional/"$TARGETAPP" ]; then
+			TARGETAPP="$TCEDIR"/optional/"$TARGETAPP"
+		else
+			echo "$TARGETAPP not found!"
+			abort_to_saved_dir
+		fi
+	fi
+	FROMWHERE=`dirname "$TARGETAPP"` && cd "$FROMWHERE"
+	EXTENSION=`basename "$TARGETAPP"`
+	if [ -f "$EXTENSION".dep ]; then
+		DEPLIST=""
+		local_recursive_scan ${EXTENSION}
+		pop_dep
+		while [ "$F" ]; do
+			F="${F##*/}"
+			DEPFILE="$F"
+			if [ ! -f /usr/local/tce.installed/"${F%.*}" ]; then
+				if [ -f "$DEPFILE" ]; then
+					install "$DEPFILE"
+					[ "$SUPPRESS" ] || echo "$DEPFILE: OK"
+				else
+					echo "$DEPFILE not found!"
+					abort_to_saved_dir
+				fi
+			fi
+			pop_dep
+		done
+	else
+		install "$TARGETAPP"
+		[ "$SUPPRESS" ] || echo "$TARGETAPP: OK"
+	fi
+fi
+
+cd "$SAVED_DIR"
+done # Finish the for-loop for multiple extensions
+
+[ "$BOOTING" ] && exit 0
+[ $(which "$DESKTOP"_restart) ] && "$DESKTOP"_restart 2>/dev/null
+exit 0

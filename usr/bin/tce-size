@@ -1,0 +1,79 @@
+#!/bin/busybox ash
+# tce-size.sh - Copyright 2010 Brian Smith
+# Some edits by Curaga
+# Edited for use by appbrowser by roberts
+# Licensed under GPLv2 License
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+. /etc/init.d/tc-functions
+useBusybox
+
+get_dependencies()
+{
+
+for F in `sed 's/ //g' "$app".tree | sort -f | uniq`; do
+      size=`grep -w "^$F" sizelist  | awk '{print $2}'`
+      case $size in
+      [0-9]*)
+	 sizemb=`dc $size 1024 / 1024 / p`
+	 if [ -f "$localtce"/optional/"$F" ]; then
+		 totalsize_installed=$(($totalsize_installed + $size))
+		 echo -n "  "
+		 printf "%-40s" $F
+		 printf " %10d, %6.2f MB\n" $size $sizemb
+	 else
+		 echo -n "+ "
+		 totalsize_needed=$(($totalsize_needed + $size))
+		 printf "%-40s %10d, %6.2f MB\n" $F $size $sizemb
+	 fi
+      ;;
+      *)
+	 printf "%-40s Error, not found \n" $F
+      ;;
+      esac
+done
+}
+
+app=$1
+
+if [ -n "$app" ]; then
+   app=${app%.tcz}
+   app="$app.tcz"
+
+   localtce=/etc/sysconfig/tcedir
+
+   cd /tmp
+
+   if [ ! -f sizelist ]; then
+	tce-fetch.sh sizelist.gz || exit 1
+	gunzip -f sizelist.gz
+	touch sizelist
+   else # Check if the file is older than 5 hours
+	age=$((`date +%s` - `date -r sizelist +%s`))
+	if [ $age -ge 18000 ]; then
+		tce-fetch.sh sizelist.gz || exit 1
+		gunzip -f sizelist.gz
+		touch sizelist
+	fi
+   fi
+   tce-fetch.sh "$app".tree || exit 1
+
+   totalsize_needed=0
+   totalsize_installed=0
+
+   get_dependencies $app
+
+   totalsize=$(($totalsize_needed + $totalsize_installed))
+   totalsizemb=`dc $totalsize 1024 / 1024 / p`
+   totalsize_neededmb=`dc $totalsize_needed 1024 / 1024 / p`
+   totalsize_installedmb=`dc $totalsize_installed 1024 / 1024 / p`
+
+   printf "\n  %-40s %10d, %6.2f MB\n" "Total size (bytes)" $totalsize $totalsizemb
+   printf "+ %-40s %10d, %6.2f MB\n" "Indicates need to download" $totalsize_needed $totalsize_neededmb
+else
+   echo "Specify extension in command line:"
+   echo "Example:   $0 firefox.tcz"
+fi

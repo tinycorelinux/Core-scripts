@@ -1,0 +1,131 @@
+#!/bin/busybox ash
+# (c) Robert Shingledecker 2009-2012
+. /etc/init.d/tc-functions
+useBusybox
+
+selectList() {
+	TMPFILE=`mktemp`	
+	for F in `find ${TCEDIR}/${DIRNAME} -name "*"${TYPE} 2>/dev/null`; do
+		ITEM="${F##*/}"
+		ADDITEM=1
+		
+#		Exclude onboot items from select for on demand.
+		[ "$TYPE" == "tcz" ] && if grep -qw "$ITEM" "$TCEDIR"/"$ONBOOTNAME"; then ADDITEM=0; fi
+		
+#		Exclude current ondemand items from select
+		[ -e "$TCEDIR"/ondemand/"$ITEM" ] && ADDITEM=0
+		
+		[ "$ADDITEM" == "1" ] &&  echo "$ITEM" >> "$TMPFILE"
+	done
+	
+	sort -f "$TMPFILE"
+	rm -f "$TMPFILE"
+}
+
+TCEDIR=/etc/sysconfig/tcedir
+[ -d "$TCEDIR" ] || exit 1
+WBAR_ICON_DIR="/usr/local/tce.icons"
+FREEDESKTOP=/usr/local/share/applications
+2>/dev/null read DESKTOP < /etc/sysconfig/desktop
+
+LOCALDIR="$HOME"/.local/share/applications
+
+[ -d /mnt/test ] || sudo mkdir -p /mnt/test
+
+while getopts clter OPTION
+do
+	case ${OPTION} in
+		c) CURRITEMS=1 ;;
+		l) LISTITEMS=1 ;;
+		t) TCZ=1; TYPE="tcz" ;;
+		e) EXECITEM=1 ;;
+		r) REMOVEITEM=1 ;;
+		*) exit 1 ;;
+	esac
+done
+shift `expr $OPTIND - 1`
+
+[ -n "$TYPE" ] || TYPE="tcz"
+
+ONBOOTNAME="$(getbootparam lst 2>/dev/null)"
+if [ -z "$ONBOOTNAME" ]; then
+	[ "$TYPE" == "tcz" ] && ONBOOTNAME="onboot.lst" 
+fi
+
+[ "$TYPE" == "tcz" ] && DIRNAME="optional"
+
+if [ "$LISTITEMS" ]; then
+	selectList
+	exit 0
+fi
+
+if [ "$CURRITEMS" ]; then
+	for F in `ls "$TCEDIR"/ondemand/*`
+	do
+		grep -l ."$TYPE" "$F" | awk 'BEGIN{FS="/"}{print $NF}'
+	done
+	exit 0
+fi
+
+if [ "$REMOVEITEM" ]; then
+	[ -z "$1" ] && exit 1
+	TYPE="${1##*.}"
+	[ "$TYPE" == "tcz" ] && APPNAME="${1%.tcz}"
+	
+	TARGET="$TCEDIR"/ondemand/"$APPNAME"
+	if [ -e "$TARGET" ]; then
+		rm -f  "$TARGET"
+		[ $(which "$DESKTOP"_ondemand) ] && "$DESKTOP"_ondemand 2>/dev/null
+		[ $(which "$DESKTOP"_restart) ] && "$DESKTOP"_restart 2>/dev/null
+	fi
+	exit 0
+fi
+
+if  [ -n "$1" ]; then
+	EXTN="$1"
+	APPNAME="${EXTN%.*}"
+	if [ "$APPNAME" == "$EXTN" ]; then
+		echo ".tcz is required."
+		exit 1
+	fi
+else
+	exit 1
+fi
+
+if [ "$EXECITEM" ]; then
+	TYPE="${1##*.}"
+	if [ "$TYPE" == "tcz" ]
+	then
+		FROMWHERE="$TCEDIR"/"optional/"
+		COMMAND="tce-load -is"
+	fi
+	INSTALLED=/usr/local/tce.installed
+	if [ ! -e "$INSTALLED"/"$APPNAME" ]; then
+		shift 1 && ${COMMAND} "$FROMWHERE""$APPNAME"."$TYPE" && launchApp "$APPNAME" $@
+	else
+		if [ "$(which $APPNAME)" ]
+		then
+			exec $APPNAME
+		else
+			echo "Already loaded. Call from regular menu or terminal."
+			printf "\a"
+		fi
+	fi
+	exit 0
+fi
+
+# Arrive here if no flags were specified.
+# Create ondemand item....
+# Generic shell script for OnDemand by all WMs
+[ -d "$TCEDIR"/ondemand ] || mkdir -p "$TCEDIR"/ondemand
+FILE="$TCEDIR"/ondemand/"$APPNAME"
+echo '#!/bin/sh' > "$FILE"
+echo "ondemand -e $EXTN" >> "$FILE"
+chmod +x "$FILE"
+
+# Optional as flwm does not need a make_ondemand.
+[ $(which ${DESKTOP}_ondemand) ] && ${DESKTOP}_ondemand "$APPNAME"
+
+if [ $(which ${DESKTOP}_restart) ]; then
+	${DESKTOP}_restart
+fi
