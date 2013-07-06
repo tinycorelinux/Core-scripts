@@ -262,6 +262,7 @@ chmod g+w "$TCEDIR" "$TCEINSTALLED" "$TCLOOP"
 chmod u+s /bin/busybox /usr/bin/sudo
 
 get_app() {
+	LOADER="tce-load -i" ; PKG=optional
 	PROTO=$1
 	HOST=${2%%/*}
 	REST=${2#*/}
@@ -272,7 +273,8 @@ get_app() {
 	OPTS=${REST#*:}
 	[ "$OPTS" == "no-ping" ] && NOPING=1 || NOPING=0
 	[ -z "$DHCP_RAN" ] && wait4Server $HOST $NOPING
-	(	TCE=/tmp/tce
+	(	TCE=/tmp/tce/$PKG
+		mkdir -p $TCE
 		cd $TCE
 		[ "$PROTO" = "TFTP" ] && tftp -g -r $FILE $HOST
 		[ "$PROTO" = "HTTP" ] && wget -q http://${HOST}/${FILE}
@@ -284,7 +286,7 @@ get_app() {
 			[ "$PROTO" = "TFTP" ] && tftp -g -r $FILE $HOST
 			[ "$PROTO" = "HTTP" ] && wget -q http://${HOST}/${FILE}
 			[ $SHOWAPPS ] && echo -ne "$APP "
-			su "$USER" -c "/usr/bin/tce-load -i $FL $TCE/$APP"
+			su "$USER" -c "$LOADER $FL $TCE/$APP"
 			[ "$FL" == "-c" ] && rm $APP
 		done < $NAME
 		[ $SHOWAPPS ] && echo "${GREEN} Done.${NORMAL}"
@@ -360,26 +362,36 @@ fi
 
 # Preload drivers needed for tce/opt/home on lvm/RAID etc
 if [ -n "$PRETCE" ]; then
-	PPATH=${PRETCE%%/*}
-	mkdir -p /mnt/$PPATH
-	mount /dev/$PPATH /mnt/$PPATH
-	SRC=/mnt/$PRETCE
+	PKG=optional ; LOADER="tce-load -i" ; LIST=onboot.lst
 	RAM=/tmp/tce
-	if [ -f $SRC/copy2fs.flg ] ; then
-		CPTOFS=1
-		mkdir -p $RAM/optional
-		cp $SRC/optional/* $RAM/optional/
-		cp $SRC/onboot.lst $RAM/
+	CPTOFS=""
+	if [ "$PRETCE" == "RAM" ] ; then
 		SRC=$RAM
-		umount /mnt/$PPATH 2>/dev/null
+		[ -f $SRC/copy2fs.flg ] && CPTOFS=1
+	else
+		PPATH=${PRETCE%%/*}
+		mkdir -p /mnt/$PPATH
+		mount /dev/$PPATH /mnt/$PPATH
+		SRC=/mnt/$PRETCE
+		[ -f $SRC/copy2fs.flg ] && CPTOFS=1
+		if [ $CPTOFS ] ; then
+			mkdir -p $RAM/$PKG
+			cp $SRC/$PKG/* $RAM/$PKG/
+			cp $SRC/$LIST $RAM/
+			SRC=$RAM
+			umount /mnt/$PPATH 2>/dev/null
+		fi
 	fi
-	while read NAME
+	MNT=""
+	while read NAME OPT
 	do
-		[ "$CPTOFS" ] || grep -q $NAME $SRC/copy2fs.lst 2>/dev/null && FL="-c" || FL='' 
-		su "$USER" -c "/usr/bin/tce-load -i $FL $SRC/optional/$NAME"
-	done < $SRC/onboot.lst
-	umount /mnt/$PPATH 2>/dev/null
-	[ "$CPTOFS" ] && rm -rf $RAM/*
+		[ $CPTOFS ] || grep -q $NAME $SRC/copy2fs.lst 2>/dev/null && FL="-c" || FL='' 
+		[ $FL ] || MNT=1
+		su "$USER" -c "/usr/bin/$LOADER $SRC/$PKG/$NAME"
+		[ "$SRC" == "$RAM" ] && [ "$FL" == "-c" ] && rm $RAM/$PKG/$NAME
+	done < $SRC/$LIST
+	[ "$SRC" != "$RAM" ] && [ $MNT ] || umount /mnt/$PPATH 2>/dev/null
+	rm $RAM/copy2fs.flg $RAM/copy2fs.lst 2>/dev/null
 fi
 
 unset HOME_SETUP
