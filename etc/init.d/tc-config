@@ -18,7 +18,6 @@ addUser(){
 	/bin/adduser -s /bin/sh -G staff -D "$USER"
 	echo "$USER":tcuser | /usr/sbin/chpasswd -m
 	echo -e "$USER\tALL=NOPASSWD: ALL" >> /etc/sudoers
-	setupHome
 }
 
 ### END functions
@@ -246,7 +245,6 @@ else
 	USER="tc"
 fi
 echo "$USER" > /etc/sysconfig/tcuser
-mkdir -p /home/"$USER"
 if [ -n "$SUPERUSER" ]; then
 	touch /etc/sysconfig/superuser
 fi
@@ -425,7 +423,7 @@ if [ -n "$MYHOME" ]; then
 	fi
 fi
 
-[ ! "$HOME_SETUP" ] && setupHome
+setupHome
 
 unset OPT_SETUP
 if [ -n "$MYOPT" ]; then
