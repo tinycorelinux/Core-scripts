@@ -70,7 +70,7 @@ fi
 if [ "$REMOVEITEM" ]; then
 	[ -z "$1" ] && exit 1
 	TYPE="${1##*.}"
-	[ "$TYPE" == "tcz" ] && APPNAME="${1%.tcz}"
+	[ "$TYPE" == "tcz" ] && APPNAME="${1%.tcz}" || APPNAME="$1"
 	
 	TARGET="$TCEDIR"/ondemand/"$APPNAME"
 	if [ -e "$TARGET" ]; then
