@@ -245,6 +245,8 @@ else
 	USER="tc"
 fi
 echo "$USER" > /etc/sysconfig/tcuser
+mkdir -p /home/"$USER"
+
 if [ -n "$SUPERUSER" ]; then
 	touch /etc/sysconfig/superuser
 fi
@@ -392,7 +394,6 @@ if [ -n "$PRETCE" ]; then
 	rm $RAM/copy2fs.flg $RAM/copy2fs.lst 2>/dev/null
 fi
 
-unset HOME_SETUP
 if [ -n "$MYHOME" ]; then
 	wait $fstab_pid
 	PARTITION=${MYHOME##/dev/}
@@ -410,7 +411,6 @@ if [ -n "$MYHOME" ]; then
 			* )
 				if [ -d "$MOUNTPOINT/home/$USER" ]; then
 					mount --bind "$MOUNTPOINT/home" /home
-					HOME_SETUP=1
 				else
 					mkdir -p "$MOUNTPOINT/home/$USER"
 					mount --bind "$MOUNTPOINT/home" /home
