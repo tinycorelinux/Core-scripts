@@ -306,7 +306,13 @@ if [ -n "$NFSMOUNT" ]; then
 	[ "$OPTS" == "no-ping" ] && NOPING=1 || NOPING=0
 	[ -z "$DHCP_RAN" ] && wait4Server $SERVER $NOPING
 	wait $fstab_pid
-	echo "${SERVER}:${DIR} /mnt/nfs nfs defaults,nolock 0 0" >> /etc/fstab
+	if [ -x /usr/local/etc/init.d/nfs-client ] ; then
+	   /usr/local/etc/init.d/nfs-client start
+	   NOLOCK="";
+	else
+	   NOLOCK=",nolock"
+	fi
+	echo "${SERVER}:${DIR} /mnt/nfs nfs defaults${NOLOCK} 0 0" >> /etc/fstab
 	[ $SHOWAPPS ] && echo "Mounting ${SERVER}:${DIR}"
 	mkdir /mnt/nfs
 	mount /mnt/nfs >/dev/null 2>&1
