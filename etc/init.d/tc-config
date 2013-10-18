@@ -14,7 +14,7 @@ VERSION="$(cat /usr/share/doc/tc/release.txt)"
 KERNEL="$(uname -r)"
 
 addUser(){
-	echo "${GREEN}Adding user ${YELLOW} $USER ${NORMAL}"
+	echo "${GREEN}Adding user ${YELLOW}$USER ${NORMAL}"
 	/bin/adduser -s /bin/sh -G staff -D "$USER"
 	echo "$USER":tcuser | /usr/sbin/chpasswd -m
 	echo -e "$USER\tALL=NOPASSWD: ALL" >> /etc/sudoers
@@ -89,7 +89,7 @@ for i in `cat /proc/cmdline`; do
 		;;
 	esac
 done
-echo "${GREEN}Done.${NORMAL}"
+echo "${GREEN} Done.${NORMAL}"
 
 if [ -n "$BLACKLIST" ]; then
 	mkdir -p /etc/modprobe.d
@@ -107,14 +107,14 @@ echo -n "${BLUE}Starting udev daemon for hotplug support...${NORMAL}"
 #/sbin/udevadm trigger --action=add 2>/dev/null >/dev/null &
 /sbin/udevadm trigger --action=add 2>&1 >/dev/null &
 rotdash $!
-echo "${GREEN}Done.${NORMAL}"
+echo "${GREEN} Done.${NORMAL}"
 
 [ -n "$WAITUSB" ] && (
 	case $WAITUSB in
 		*:*) dev=${WAITUSB#*:}
 		timeout=$((${WAITUSB%:*} * 4))
 		while [ $timeout -gt 0 ]; do
-			echo -en "${BLUE}\rWaiting as requested ... ${NORMAL}$(($timeout / 4)) "
+			echo -en "${BLUE}\rWaiting as requested... ${NORMAL}$(($timeout / 4)) "
 			timeout=$(($timeout - 1))
 			sleep 0.25
 			blkid -lt $dev >/dev/null && timeout=0
@@ -467,7 +467,7 @@ if [ -n "$LAPTOP" ]; then
 	modprobe ac && modprobe battery 2>/dev/null
 	modprobe yenta_socket >/dev/null 2>&1 || modprobe i82365 >/dev/null 2>&1
 	/sbin/udevadm trigger 2>/dev/null >/dev/null &
-	echo " ${GREEN}Laptop options enabled (AC,Battery, & PCMCIA).${NORMAL}"
+	echo "${GREEN}Laptop options enabled (AC, Battery and PCMCIA).${NORMAL}"
 fi
 
 if [ -n "$NOSWAP" ]; then
@@ -524,14 +524,14 @@ if [ -n "$SHOWAPPS" ]; then
 	/usr/bin/tce-setup "booting" 
 	[ -n "$ISOFILE" ] && /usr/bin/fromISOfile "$ISOFILE"
 	rm /etc/sysconfig/showapps
-	echo "${GREEN}Done.${NORMAL}"
+	echo "${GREEN} Done.${NORMAL}"
 else
 	echo -n "$MSSG"
 	/usr/bin/tce-setup "booting" > /dev/null 2>&1 & 
 	rotdash $!
 	[ -n "$ISOFILE" ] && /usr/bin/fromISOfile "$ISOFILE" > /dev/null 2>&1 &
 	rotdash $!
-	echo "${GREEN}Done.${NORMAL}"
+	echo "${GREEN} Done.${NORMAL}"
 	if [ -s /tmp/aberr ]; then
 		echo "${RED}Warning! Errors occured during the loading of the extensions.${YELLOW}"
 		cat /tmp/aberr
