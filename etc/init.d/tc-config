@@ -294,6 +294,42 @@ get_app() {
 	)
 }
 
+# Preload drivers needed for tce/opt/home on lvm/RAID etc
+if [ -n "$PRETCE" ]; then
+	PKG=optional ; LOADER="tce-load -i" ; LIST=onboot.lst
+	RAM=/tmp/tce
+	CPTOFS=""
+	if [ "$PRETCE" == "RAM" ] ; then
+		SRC=$RAM
+		[ -f $SRC/copy2fs.flg ] && CPTOFS=1
+	else
+		PPATH=${PRETCE%%/*}
+		mkdir -p /mnt/$PPATH
+		mount /dev/$PPATH /mnt/$PPATH
+		SRC=/mnt/$PRETCE
+		[ -x $SRC/onpre.sh ] && cp $SRC/onpre.sh /tmp
+		[ -f $SRC/copy2fs.flg ] && CPTOFS=1
+		if [ $CPTOFS ] ; then
+			mkdir -p $RAM/$PKG
+			cp $SRC/$PKG/* $RAM/$PKG/
+			cp $SRC/$LIST $RAM/
+			SRC=$RAM
+			umount /mnt/$PPATH 2>/dev/null
+		fi
+	fi
+	MNT=""
+	while read NAME OPT
+	do
+		[ $CPTOFS ] || grep -q $NAME $SRC/copy2fs.lst 2>/dev/null && FL="-c" || FL='' 
+		[ $FL ] || MNT=1
+		su "$USER" -c "/usr/bin/$LOADER $SRC/$PKG/$NAME"
+		[ "$SRC" == "$RAM" ] && [ "$FL" == "-c" ] && rm $RAM/$PKG/$NAME
+	done < $SRC/$LIST
+	[ "$SRC" != "$RAM" ] && [ $MNT ] || umount /mnt/$PPATH 2>/dev/null
+	rm $RAM/copy2fs.flg $RAM/copy2fs.lst 2>/dev/null
+	[ -x /tmp/onpre.sh ] && /tmp/onpre.sh
+fi
+
 # First process tftp and http entries
 modprobe -q squashfs 2>/dev/null
 [ -n "$TFTPLIST" ] && get_app "TFTP" $TFTPLIST
@@ -365,40 +401,6 @@ if [ -n "$TCVD" ]; then
 		fi
 	fi
 fi  
-
-# Preload drivers needed for tce/opt/home on lvm/RAID etc
-if [ -n "$PRETCE" ]; then
-	PKG=optional ; LOADER="tce-load -i" ; LIST=onboot.lst
-	RAM=/tmp/tce
-	CPTOFS=""
-	if [ "$PRETCE" == "RAM" ] ; then
-		SRC=$RAM
-		[ -f $SRC/copy2fs.flg ] && CPTOFS=1
-	else
-		PPATH=${PRETCE%%/*}
-		mkdir -p /mnt/$PPATH
-		mount /dev/$PPATH /mnt/$PPATH
-		SRC=/mnt/$PRETCE
-		[ -f $SRC/copy2fs.flg ] && CPTOFS=1
-		if [ $CPTOFS ] ; then
-			mkdir -p $RAM/$PKG
-			cp $SRC/$PKG/* $RAM/$PKG/
-			cp $SRC/$LIST $RAM/
-			SRC=$RAM
-			umount /mnt/$PPATH 2>/dev/null
-		fi
-	fi
-	MNT=""
-	while read NAME OPT
-	do
-		[ $CPTOFS ] || grep -q $NAME $SRC/copy2fs.lst 2>/dev/null && FL="-c" || FL='' 
-		[ $FL ] || MNT=1
-		su "$USER" -c "/usr/bin/$LOADER $SRC/$PKG/$NAME"
-		[ "$SRC" == "$RAM" ] && [ "$FL" == "-c" ] && rm $RAM/$PKG/$NAME
-	done < $SRC/$LIST
-	[ "$SRC" != "$RAM" ] && [ $MNT ] || umount /mnt/$PPATH 2>/dev/null
-	rm $RAM/copy2fs.flg $RAM/copy2fs.lst 2>/dev/null
-fi
 
 if [ -n "$MYHOME" ]; then
 	wait $fstab_pid
