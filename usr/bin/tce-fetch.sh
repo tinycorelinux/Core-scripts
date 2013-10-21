@@ -4,10 +4,12 @@
 . /etc/init.d/tc-functions
 useBusybox
 getMirror
+KERNELVER=$(uname -r)
 if [ "$1" == "-O" ]; then
 	shift
-	wget -cq -O- "$MIRROR"/"$1"
+	wget -cq -O- "$MIRROR"/"${1//-KERNEL.tcz/-${KERNELVER}.tcz}"
 else
-	[ -f "$1" ] && rm -f "$1"
-	wget -cq "$MIRROR"/"$1"
+	F="${1//-KERNEL.tcz/-${KERNELVER}.tcz}"
+	[ -f "$F" ] && rm -f "$F"
+	wget -cq "$MIRROR"/"$F"
 fi
