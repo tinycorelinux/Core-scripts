@@ -1,11 +1,16 @@
 #!/bin/busybox ash
+
+# (c) Robert Schingledecker 2009
+#
+# Multiarch support added by bmarkus, 28.10.2013
+
 . /etc/init.d/tc-functions
 useBusybox
 RESULTS="$(cat /usr/share/doc/tc/release.txt)"
 while getopts cls OPTION
 do
   case ${OPTION} in
-    c) LATEST=`wget -q -O - $(cat /opt/tcemirror)/latest 2>/dev/null`
+    c) LATEST=`wget -q -O - $(cat /opt/tcemirror)/latest-$(getBuild) 2>/dev/null`
        if [ "$?" == 0 ]; then
        		RUNNING="${RESULTS##*-}"
        		if [ "$LATEST" != "$RUNNING" ]; then
