@@ -59,7 +59,7 @@ return 1
 
 getbootparam(){
 stringinstring " $1=" "$CMDLINE" || return 1
-result="${CMDLINE##*$1=}"
+result="${CMDLINE##* $1=}"
 result="${result%%[ 	]*}"
 echo "$result"
 return 0
