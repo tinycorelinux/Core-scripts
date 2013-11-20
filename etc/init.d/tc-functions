@@ -177,7 +177,6 @@ getpasswd(){
       while [ "$CH" != "" ]; do
         read -s -n 1 CH
         if [ "$CH" == "" -a ${#PASSWD} -gt 0 ]; then
-          PASSWD=`echo $PASSWD | busybox sed 's/.$//'`
           echo -n -e "\b \b"
         elif [ "$CH" != "" ]; then
           PASSWD="$PASSWD$CH"
