@@ -168,21 +168,13 @@ getpasswd(){
     PASSWD=""
     until [ ${#PASSWD} -ge 8 ] && [ ${#PASSWD} -le 56 ]; do
       PASSWD=""
-      CH="."
       if [ "$2" == "confirm" ]; then
+        echo
         echo -n "${BLUE} Re-enter${NORMAL}: "
       else
         echo -n "${BLUE}Enter password (8 to 56 characters) for ${YELLOW}$1${NORMAL}: "
       fi
-      while [ "$CH" != "" ]; do
-        read -s -n 1 CH
-        if [ "$CH" == "" -a ${#PASSWD} -gt 0 ]; then
-          echo -n -e "\b \b"
-        elif [ "$CH" != "" ]; then
-          PASSWD="$PASSWD$CH"
-          if [ "$CH" != "" ]; then echo -n "*"; fi
-        fi
-      done
+      read -s PASSWD
       [ ${#PASSWD} -lt 8 ] && echo " Password is too short!"
       [ ${#PASSWD} -gt 56 ] && echo " Password is too long!"
     done
