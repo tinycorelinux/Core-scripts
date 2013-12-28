@@ -259,7 +259,7 @@ ln -sf "$TCEDIR" /etc/sysconfig/tcedir
 chgrp staff "$TCEDIR" "$TCEINSTALLED" "$TCLOOP"
 chmod g+w "$TCEDIR" "$TCEINSTALLED" "$TCLOOP"
 
-chmod u+s /bin/busybox_suid /usr/bin/sudo
+chmod u+s /bin/busybox.suid /usr/bin/sudo
 
 get_app() {
 	LOADER="tce-load -i" ; PKG=optional
