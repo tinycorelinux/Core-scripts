@@ -8,7 +8,7 @@ for file in "$@"; do
 	;;
   esac
 
-LD_TRACE_LOADED_OBJECTS=1 /lib/ld-linux.so.2 "$file"
+LD_TRACE_LOADED_OBJECTS=1 /lib/ld-linux* "$file"
 
 done
 
