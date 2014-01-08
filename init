@@ -2,7 +2,10 @@
 mount proc
 grep -qw multivt /proc/cmdline && sed -i s/^#tty/tty/ /etc/inittab
 if ! grep -qw noembed /proc/cmdline; then
-  mount / -o remount,size=90%
+
+  inodes=`grep MemFree /proc/meminfo | awk '{print $2/3}' | cut -d. -f1`
+
+  mount / -o remount,size=90%,nr_inodes=$inodes
   umount proc
   exec /sbin/init
 fi
