@@ -5,7 +5,7 @@ useBusybox
 
 selectList() {
 	TMPFILE=`mktemp`	
-	for F in `find ${TCEDIR}/${DIRNAME} -name "*"${TYPE} 2>/dev/null`; do
+	for F in `ls ${TCEDIR}/${DIRNAME}/*${TYPE}`; do
 		ITEM="${F##*/}"
 		ADDITEM=1
 		
