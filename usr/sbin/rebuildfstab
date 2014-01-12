@@ -86,7 +86,8 @@ checkntfs() {
   if [ "$MOUNTPOINT" != "none" ]; then
     mkdir -p "/mnt/$DEVNAME" 2>/dev/null >/dev/null
   fi	
-  printf "%-15s %-15s %-8s %-20s %-s\n" "$DEVROOT/$DEVNAME" "$MOUNTPOINT" "$FSTYPE" "$OPTIONS" "0 0 $ADDEDBY" >>"$TMP"
+  grep -q "^$DEVROOT/$DEVNAME " $TMP ||
+    printf "%-15s %-15s %-8s %-20s %-s\n" "$DEVROOT/$DEVNAME" "$MOUNTPOINT" "$FSTYPE" "$OPTIONS" "0 0 $ADDEDBY" >>"$TMP"
 done
 
 
