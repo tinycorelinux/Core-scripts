@@ -123,5 +123,5 @@ wget() {
 }
 
 sudo() {
-    busybox sudo "$@"
+    /usr/bin/sudo "$@"
 }
