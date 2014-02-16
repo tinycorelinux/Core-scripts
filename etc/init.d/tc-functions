@@ -13,36 +13,7 @@ WHITE="$(echo -e '\033[1;37m')"
 NORMAL="$(echo -e '\033[0;39m')"
 
 useBusybox(){
-alias ar="busybox ar"
-alias awk="busybox awk"
-alias cat="busybox cat"
-alias clear="busybox clear"
-alias cp="busybox cp"
-alias cpio="busybox cpio"
-alias dc="busybox dc"
-alias df="busybox df"
-alias du="busybox du"
-alias depmod="busybox depmod"
-alias expr="busybox expr"
-alias fdisk="busybox fdisk"
-alias fold="busybox fold"
-alias grep="busybox grep"
-alias gunzip="busybox gunzip"
-alias hostname="busybox hostname"
-alias kill="busybox kill"
-alias killall="busybox killall"
-alias ls="busybox ls"
-alias md5sum="busybox md5sum"
-alias mount="busybox.suid mount"
-alias sed="busybox sed"
-alias sort="busybox sort"
-alias swapoff="busybox swapoff"
-alias sync="busybox sync"
-alias tar="busybox tar"
-alias umount="busybox.suid umount"
-alias wc="busybox wc"
-alias wget="busybox wget"
-alias sudo='sudo '
+  . /etc/init.d/busybox-aliases
 }
 
 trim() { echo $1; }
