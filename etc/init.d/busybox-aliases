@@ -121,7 +121,3 @@ wc() {
 wget() {
     busybox wget "$@"
 }
-
-sudo() {
-    /usr/bin/sudo "$@"
-}
