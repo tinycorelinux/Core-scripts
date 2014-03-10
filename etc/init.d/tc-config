@@ -40,6 +40,7 @@ for i in `cat /proc/cmdline`; do
 				kmap*) KEYMAP=${i#*=} ;;
 				tz*) TZ=${i#*=} ;;
 				desktop*) DESKTOP=${i#*=} ;;
+				ntpserver*) NTPSERVER=${i#*=} ;;
 				icons*) ICONS=${i#*=} ;;
 				noicons*) NOICONS=${i#*=} ;;
 				user*) USER=${i#*=} ;;
@@ -85,6 +86,7 @@ for i in `cat /proc/cmdline`; do
 				norestore) NORESTORE=1 ;;
 				noautologin) NOAUTOLOGIN=1 ;;
 				pause) PAUSE=1 ;;
+				ntpd) NTPD=1 ;;
 			esac
 		;;
 	esac
@@ -571,6 +573,13 @@ else
 	[ -s /etc/sysconfig/desktop ] && DESKTOP=`cat /etc/sysconfig/desktop`
 fi
 
+# If ntpserver is specified use that
+if [ -n "$NTPSERVER" ]; then
+	echo "$NTPSERVER" > /etc/sysconfig/ntpserver
+else
+	[ -s /etc/sysconfig/ntpserver ] && NTPSERVER=`cat /etc/sysconfig/ntpserver`
+fi
+
 # If restore then also pass TCE directory for quick look of mydata.tgz backupfile
 if [ -n "$MYDATA" ]; then
 	echo "$MYDATA" > /etc/sysconfig/mydata
@@ -603,4 +612,10 @@ fi
 if [ -n "$PAUSE" ]; then
 	echo -n "${BLUE}Boot time configuration completed. Press <Enter> to continue.${NORMAL}"
 	read junk
+fi
+
+if [ -n "$NTPD" ]; then
+	NTPHOST=$(cat /etc/sysconfig/ntpserver)
+	/bin/ntpd -p $NTPHOST
+	echo -n "${BLUE}NTPD daemon started.${NORMAL}"
 fi
