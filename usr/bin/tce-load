@@ -160,7 +160,7 @@ install(){
 					[ -s /etc/sysconfig/desktop ] && desktop.sh "$APPNAME"
 				fi
 			else
-				umount -d /tmp/tcloop/"$APPNAME"
+				sudo /bin/umount -d /tmp/tcloop/"$APPNAME"
 				update_system "$THISAPP" "$APPNAME"
 			fi
 		fi
