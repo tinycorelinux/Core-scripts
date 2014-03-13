@@ -86,7 +86,6 @@ for i in `cat /proc/cmdline`; do
 				norestore) NORESTORE=1 ;;
 				noautologin) NOAUTOLOGIN=1 ;;
 				pause) PAUSE=1 ;;
-				ntpd) NTPD=1 ;;
 			esac
 		;;
 	esac
@@ -614,8 +613,3 @@ if [ -n "$PAUSE" ]; then
 	read junk
 fi
 
-if [ -n "$NTPD" ]; then
-	NTPHOST=$(cat /etc/sysconfig/ntpserver)
-	/bin/ntpd -p $NTPHOST
-	echo -n "${BLUE}NTPD daemon started.${NORMAL}"
-fi
