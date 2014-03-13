@@ -10,12 +10,12 @@ useBusybox
 ACTION="$1"
 case "$ACTION" in
   reboot )
-    sudo reboot
+    sudo /sbin/reboot
   ;;
   shutdown )
-    sudo poweroff
+    sudo /sbin/poweroff
   ;;
   * )
-    sudo poweroff
+    sudo /sbin/poweroff
   ;;
 esac

@@ -93,24 +93,24 @@ pop_dep(){
 }
 
 copyInstall() {
-	[ -d /mnt/test ] || sudo mkdir -p /mnt/test
-	sudo mount $1 /mnt/test -t squashfs -o loop,ro,bs=4096
+	[ -d /mnt/test ] || sudo /bin/mkdir -p /mnt/test
+	sudo /bin/mount $1 /mnt/test -t squashfs -o loop,ro,bs=4096
 	if [ "$?" == 0 ]; then
 		if [ "$(ls -A /mnt/test)" ]; then
-			yes "$FORCE" | sudo cp -ai /mnt/test/. / 2>/dev/null
+			yes "$FORCE" | sudo /bin/cp -ai /mnt/test/. / 2>/dev/null
 			[ `find /mnt/test/ -type d -name modules` ] && MODULES=TRUE
 		fi
-		sudo umount -d /mnt/test
+		sudo /bin/umount -d /mnt/test
 	fi
 }
 
 update_system() {
 	if [ "$BOOTING" ]; then
-		[ "$MODULES" ] && sudo touch /etc/sysconfig/newmodules
+		[ "$MODULES" ] && sudo /bin/touch /etc/sysconfig/newmodules
 	else
 		[ "$THISAPP" != "$EXTENSION" ] || [ "$DOWNLOAD_ONLY" ] || [ "$LOAD_ONLY" ] || echo "$THISAPP" >> ../$ONBOOTNAME
 		if [ "$MODULES" ]; then
-			sudo depmod -a 2>/dev/null
+			sudo /bin/depmod -a 2>/dev/null
 			sudo /sbin/udevadm trigger
 		fi
 		sudo /sbin/ldconfig 2>/dev/null
@@ -145,15 +145,15 @@ install(){
 				[ -s /etc/sysconfig/desktop ] && desktop.sh "$APPNAME"
 			fi
 		else
-			[ -d /tmp/tcloop/"$APPNAME" ] || sudo mkdir -p /tmp/tcloop/"$APPNAME"
+			[ -d /tmp/tcloop/"$APPNAME" ] || sudo /bin/mkdir -p /tmp/tcloop/"$APPNAME"
 			awk -v appname="/tmp/tcloop/$APPNAME" ' { if ( $2 == appname )  exit 1 }' /etc/mtab
-			[ "$?" == 1 ] || sudo mount "$THISAPP" /tmp/tcloop/"$APPNAME" -t squashfs -o loop,ro,bs=4096 2>&1
+			[ "$?" == 1 ] || sudo /bin/mount "$THISAPP" /tmp/tcloop/"$APPNAME" -t squashfs -o loop,ro,bs=4096 2>&1
 			[ "$?" == 0 ] || abort_to_saved_dir
 			[ -z "`ls /tmp/tcloop/${APPNAME}`" ] && EMPTYEXT=1
 			[ "`find /tmp/tcloop/${APPNAME} -mindepth 1 -maxdepth 2 | wc -l`" -le 1 ] && EMPTYEXT=1
 
 			if [ -z "$EMPTYEXT" ]; then
-				yes "$FORCE" | sudo cp -ais /tmp/tcloop/"$APPNAME"/* / 2>/dev/null
+				yes "$FORCE" | sudo /bin/cp -ais /tmp/tcloop/"$APPNAME"/* / 2>/dev/null
 				[ `find /tmp/tcloop/"$APPNAME" -type d -name modules` ] && MODULES=TRUE
 				update_system "$THISAPP" "$APPNAME"
 				if [ ! "$BOOTING" ]; then

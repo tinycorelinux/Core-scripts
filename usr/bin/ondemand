@@ -30,7 +30,7 @@ FREEDESKTOP=/usr/local/share/applications
 
 LOCALDIR="$HOME"/.local/share/applications
 
-[ -d /mnt/test ] || sudo mkdir -p /mnt/test
+[ -d /mnt/test ] || sudo /bin/mkdir -p /mnt/test
 
 while getopts clter OPTION
 do

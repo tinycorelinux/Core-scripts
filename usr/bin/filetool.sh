@@ -28,7 +28,7 @@ abort(){
 }
 
 blowfish_encrypt(){
-KEY=$(sudo cat /etc/sysconfig/bfe)
+KEY=$(sudo /bin/cat /etc/sysconfig/bfe)
 cat << EOD | sudo /usr/bin/bcrypt -c "$MOUNTPOINT"/"$FULLPATH"/$1 2>/dev/null
 "$KEY"
 "$KEY"
@@ -40,12 +40,12 @@ sync
 # clean_up and failed - from non-interactive boot time use.
 clean_up(){
 if [ $MOUNTED == "no" ]; then
-  sudo umount $MOUNTPOINT
+  sudo /bin/umount $MOUNTPOINT
 fi
 # Only store device name if backup/restore successful
 [ $1 -eq 0 ] && echo "${D2#/dev/}"/$FULLPATH  > /etc/sysconfig/backup_device
 # Remove bfe password if decryption fails
-[ $1 -eq 98 ] && sudo rm -f /etc/sysconfig/bfe
+[ $1 -eq 98 ] && sudo /bin/rm -f /etc/sysconfig/bfe
 sync
 exit $1
 }
@@ -91,10 +91,10 @@ shift `expr $OPTIND - 1`
 
 if [ $DRYRUN ]; then
   echo "Performing dry run backup (backup will not actually take place).   Please wait."; echo
-  totalcompressedsize=`sudo tar -C / -T /opt/.filetool.lst -X /opt/.xfiletool.lst -cvzf - 2>/tmp/backup_dryrun_list | wc -c`
+  totalcompressedsize=`sudo /bin/tar -C / -T /opt/.filetool.lst -X /opt/.xfiletool.lst -cvzf - 2>/tmp/backup_dryrun_list | wc -c`
   while read entry; do
     if [ -f "/${entry}" ]; then
-      size=`sudo ls -al "/${entry}" | awk '{print $5}'`
+      size=`sudo /bin/ls -al "/${entry}" | awk '{print $5}'`
       totalsize=$(($totalsize + $size))
       sizemb=`dc $size 1024 / 1024 / p`
       printf "%6.2f MB  /%s\n" $sizemb "$entry"
@@ -139,7 +139,7 @@ if [ -z "$MOUNTPOINT" ]; then
 fi
 
 if [ $MOUNTED == "no" ]; then
-   sudo mount $MOUNTPOINT
+   sudo /bin/mount $MOUNTPOINT
    if [ "$?" != 0 ]; then
       echo "Unable to mount device $DEVICE" > /tmp/backup_status
       wrapup
@@ -155,7 +155,7 @@ if [ "$BACKUP" ] ; then
   if [ "$SAFE" ]; then
     if [ -r $MOUNTPOINT/"$FULLPATH"/${MYDATA}.tgz.bfe -o -r $MOUNTPOINT/"$FULLPATH"/${MYDATA}.tgz ]; then                     
       echo -n "Copying existing backup to $MOUNTPOINT/"$FULLPATH"/${MYDATA}bk.[tgz|tgz.bfe] .. "  
-      sudo mv -f $MOUNTPOINT/"$FULLPATH"/${MYDATA}.tgz $MOUNTPOINT/"$FULLPATH"/${MYDATA}bk.tgz 2>/dev/null || sudo mv -f $MOUNTPOINT/"$FULLPATH"/${MYDATA}.tgz.bfe $MOUNTPOINT/"$FULLPATH"/${MYDATA}bk.tgz.bfe 2>/dev/null
+      sudo /bin/mv -f $MOUNTPOINT/"$FULLPATH"/${MYDATA}.tgz $MOUNTPOINT/"$FULLPATH"/${MYDATA}bk.tgz 2>/dev/null || sudo /bin/mv -f $MOUNTPOINT/"$FULLPATH"/${MYDATA}.tgz.bfe $MOUNTPOINT/"$FULLPATH"/${MYDATA}bk.tgz.bfe 2>/dev/null
       if [ "$?" == 0 ]; then
         echo "Done."
       else
@@ -167,12 +167,12 @@ if [ "$BACKUP" ] ; then
     fi
   fi
   if [ "$VERBOSE" ]; then
-    sudo tar -C / -T /opt/.filetool.lst -X /opt/.xfiletool.lst  -czvf $MOUNTPOINT/"$FULLPATH"/${MYDATA}.tgz
+    sudo /bin/tar -C / -T /opt/.filetool.lst -X /opt/.xfiletool.lst  -czvf $MOUNTPOINT/"$FULLPATH"/${MYDATA}.tgz
     [ "$PROMPT" ] && echo -n "Press enter to continue:" &&  read ans
   else
     echo -n "Backing up files to $MOUNTPOINT/$FULLPATH/${MYDATA}.tgz"
-    [ -f /tmp/backup_status ] && sudo rm -f /tmp/backup_status
-    sudo tar -C / -T /opt/.filetool.lst -X /opt/.xfiletool.lst  -czf "$MOUNTPOINT/"$FULLPATH"/${MYDATA}.tgz"  2>/tmp/backup_status &
+    [ -f /tmp/backup_status ] && sudo /bin/rm -f /tmp/backup_status
+    sudo /bin/tar -C / -T /opt/.filetool.lst -X /opt/.xfiletool.lst  -czf "$MOUNTPOINT/"$FULLPATH"/${MYDATA}.tgz"  2>/tmp/backup_status &
     rotdash $!
     sync
     [ -s /tmp/backup_status ] && sed -i '/socket ignored/d' /tmp/backup_status 2>/dev/null
@@ -196,12 +196,12 @@ if [ "$RESTORE" ] ; then
   
   if [ ! -f $MOUNTPOINT/"$FULLPATH"/$TARGETFILE ] ; then
      if [ $MOUNTED == "no" ]; then
-      sudo umount $MOUNTPOINT
+      sudo /bin/umount $MOUNTPOINT
      fi
   fi
   
   if [ -f /etc/sysconfig/bfe ] && [ -f "$MOUNTPOINT"/"$FULLPATH"/"$TARGETFILE" ]; then
-     KEY=$(sudo cat /etc/sysconfig/bfe)
+     KEY=$(sudo /bin/cat /etc/sysconfig/bfe)
      cat << EOD | sudo /usr/bin/bcrypt -o "$MOUNTPOINT"/"$FULLPATH"/"$TARGETFILE" 2>/dev/null >/dev/null
 "$KEY"
 EOD
@@ -211,20 +211,20 @@ EOD
 "$KEY"
 EOD`; do
 	 if [ -f "/${file}" ]; then
-	   sudo mv "/${file}" "/${file}.orig_file"
+	   sudo /bin/mv "/${file}" "/${file}.orig_file"
 	 fi
        done
-       sudo touch /etc/sysconfig/comparerestore
+       sudo /bin/touch /etc/sysconfig/comparerestore
      fi
      
      if [ "$VERBOSE" ]; then
-cat << EOD | sudo /usr/bin/bcrypt -o "$MOUNTPOINT"/"$FULLPATH"/$TARGETFILE 2>/dev/null | sudo tar  -C / -zxvf -
+cat << EOD | sudo /usr/bin/bcrypt -o "$MOUNTPOINT"/"$FULLPATH"/$TARGETFILE 2>/dev/null | sudo /bin/tar  -C / -zxvf -
 "$KEY"
 EOD
        if [ "$?" != 0 ]; then failed; fi
      else
        echo -n "Restoring backup files from encrypted backup $MOUNTPOINT/$FULLPATH mounted over device $D2 "
-cat << EOD | sudo /usr/bin/bcrypt -o "$MOUNTPOINT"/"$FULLPATH"/$TARGETFILE 2>/dev/null | sudo tar  -C / -zxf -
+cat << EOD | sudo /usr/bin/bcrypt -o "$MOUNTPOINT"/"$FULLPATH"/$TARGETFILE 2>/dev/null | sudo /bin/tar  -C / -zxf -
 "$KEY"
 EOD
        if [ "$?" != 0 ]; then failed; fi
@@ -245,18 +245,18 @@ EOD
   if grep -q "comparerestore" /proc/cmdline && [ ! -e /etc/sysconfig/comparerestore ]; then
     for file in `tar -tzf $MOUNTPOINT/"$FULLPATH"/${MYDATA}.tgz`; do
       if [ -f "/${file}" ]; then
-	sudo mv "/${file}" "/${file}.orig_file"
+	sudo /bin/mv "/${file}" "/${file}.orig_file"
       fi
     done
-    sudo touch /etc/sysconfig/comparerestore
+    sudo /bin/touch /etc/sysconfig/comparerestore
   fi
   
   if [ "$VERBOSE" ]; then
-    sudo tar -C / -zxvf $MOUNTPOINT/"$FULLPATH"/${MYDATA}.tgz
+    sudo /bin/tar -C / -zxvf $MOUNTPOINT/"$FULLPATH"/${MYDATA}.tgz
     [ "$PROMPT" ] && echo -n "Press enter to continue:" && read ans
   else
     echo -n "Restoring backup files from $MOUNTPOINT/$FULLPATH/${MYDATA}.tgz "
-    sudo tar -C / -zxf $MOUNTPOINT/"$FULLPATH"/${MYDATA}.tgz 2>/dev/null &
+    sudo /bin/tar -C / -zxf $MOUNTPOINT/"$FULLPATH"/${MYDATA}.tgz 2>/dev/null &
     rotdash $!
     echo "Done."
   fi

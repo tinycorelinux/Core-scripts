@@ -30,15 +30,15 @@ setupSelectedDrive() {
 
   TCEDIR="$ANSWER"/tce
   if [ ! -d "$TCEDIR"/optional ]; then
-    sudo mkdir -p "$TCEDIR"/optional
+    sudo /bin/mkdir -p "$TCEDIR"/optional
     [ "$?" == 0 ] || exit 1
-    sudo chown -R ${USER}.staff "$TCEDIR" 2>/dev/null
-    sudo chmod -R g+w "$TCEDIR" 2>/dev/null
+    sudo /bin/chown -R ${USER}.staff "$TCEDIR" 2>/dev/null
+    sudo /bin/chmod -R g+w "$TCEDIR" 2>/dev/null
   fi
   [ -f "$TCEDIR"/${MYDATA}.tgz ] || touch "$TCEDIR"/${MYDATA}.tgz
   [ -s /etc/sysconfig/backup_device ] || echo "${TCEDIR#/mnt/}" > /etc/sysconfig/backup_device
-  sudo rm -f /etc/sysconfig/tcedir
-  sudo ln -s ${TCEDIR} /etc/sysconfig/tcedir
+  sudo /bin/rm -f /etc/sysconfig/tcedir
+  sudo /bin/ln -s ${TCEDIR} /etc/sysconfig/tcedir
 }
 
 abort() {
@@ -76,8 +76,8 @@ TCEDIR="$(readlink /etc/sysconfig/tcedir)"
 [ -d "$TCEDIR" ] || exit 1
 if [ "${TCEDIR:0:8}" != "/tmp/tce" ]; then
   echo
-  sudo chown -R "$USER".staff "$TCEDIR" 2>/dev/null
-  sudo chmod -R g+w "$TCEDIR" 2>/dev/null
+  sudo /bin/chown -R "$USER".staff "$TCEDIR" 2>/dev/null
+  sudo /bin/chmod -R g+w "$TCEDIR" 2>/dev/null
   echo -n "${GREEN}Your TCE Drive, $TCEDIR, has already been selected!${NORMAL}"
   sleep 3
   exit 1
