@@ -7,6 +7,7 @@ useBusybox
 
 USER="tc"
 TCEDIR="/tmp/tce"
+TCEOPT="/tmp/tce/optional"
 TCLOOP="/tmp/tcloop"
 TCEINSTALLED="/usr/local/tce.installed"
 INSTALLED=""
@@ -255,10 +256,12 @@ fi
 # Setup base directories for TCE Applicatons 
 [ -d "$TCEINSTALLED" ] || mkdir "$TCEINSTALLED"
 [ -d "$TCEDIR" ] || mkdir "$TCEDIR"
+[ -d "$TCEOPT" ] || mkdir "$TCEOPT"
 [ -d "$TCLOOP" ] || mkdir "$TCLOOP"
 ln -sf "$TCEDIR" /etc/sysconfig/tcedir
-chgrp staff "$TCEDIR" "$TCEINSTALLED" "$TCLOOP"
-chmod g+w "$TCEDIR" "$TCEINSTALLED" "$TCLOOP"
+chown "$USER" "$TCEOPT"
+chgrp staff "$TCEDIR" "$TCEOPT" "$TCEINSTALLED" "$TCLOOP"
+chmod g+w "$TCEDIR" "$TCEOPT" "$TCEINSTALLED" "$TCLOOP"
 
 chmod u+s /bin/busybox.suid /usr/bin/sudo
 
@@ -275,7 +278,6 @@ get_app() {
 	[ "$OPTS" == "no-ping" ] && NOPING=1 || NOPING=0
 	[ -z "$DHCP_RAN" ] && wait4Server $HOST $NOPING
 	(	TCE=/tmp/tce/$PKG
-		mkdir -p $TCE
 		cd $TCE
 		[ "$PROTO" = "TFTP" ] && tftp -g -r $FILE $HOST
 		[ "$PROTO" = "HTTP" ] && wget -q http://${HOST}/${FILE}
@@ -311,7 +313,6 @@ if [ -n "$PRETCE" ]; then
 		[ -x $SRC/onpre.sh ] && cp $SRC/onpre.sh /tmp
 		[ -f $SRC/copy2fs.flg ] && CPTOFS=1
 		if [ $CPTOFS ] ; then
-			mkdir -p $RAM/$PKG
 			cp $SRC/$PKG/* $RAM/$PKG/
 			cp $SRC/$LIST $RAM/
 			SRC=$RAM
