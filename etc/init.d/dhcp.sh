@@ -4,7 +4,7 @@
 . /etc/init.d/tc-functions
 
 # This waits until all devices have registered
-/sbin/udevadm settle --timeout=5
+/sbin/udevadm settle --timeout=120
 
 NETDEVICES="$(awk -F: '/eth.:|tr.:/{print $1}' /proc/net/dev 2>/dev/null)"
 for DEVICE in $NETDEVICES; do
