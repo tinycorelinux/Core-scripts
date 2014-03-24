@@ -110,7 +110,7 @@ update_system() {
 	else
 		[ "$THISAPP" != "$EXTENSION" ] || [ "$DOWNLOAD_ONLY" ] || [ "$LOAD_ONLY" ] || echo "$THISAPP" >> ../$ONBOOTNAME
 		if [ "$MODULES" ]; then
-			sudo /bin/depmod -a 2>/dev/null
+			sudo /sbin/depmod -a 2>/dev/null
 			sudo /sbin/udevadm trigger
 		fi
 		sudo /sbin/ldconfig 2>/dev/null
