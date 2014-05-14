@@ -157,7 +157,7 @@ if [ "$BACKUP" ] ; then
       echo -n "Copying existing backup to $MOUNTPOINT/"$FULLPATH"/${MYDATA}bk.[tgz|tgz.bfe] .. "  
       sudo /bin/mv -f $MOUNTPOINT/"$FULLPATH"/${MYDATA}.tgz $MOUNTPOINT/"$FULLPATH"/${MYDATA}bk.tgz 2>/dev/null || sudo /bin/mv -f $MOUNTPOINT/"$FULLPATH"/${MYDATA}.tgz.bfe $MOUNTPOINT/"$FULLPATH"/${MYDATA}bk.tgz.bfe 2>/dev/null
       if [ "$?" == 0 ]; then
-        echo "Done."
+        echo -e "\nDone."
       else
         echo "Error: Unable to rename ${MYDATA}.tgz to ${MYDATA}bk.tgz"
         exit 2
@@ -183,7 +183,7 @@ if [ "$BACKUP" ] ; then
      echo -n "encrypting .. "
      blowfish_encrypt ${MYDATA}.tgz
   fi
-  echo "Done."
+  echo -e "\nDone."
   clean_up 0
 fi
 
@@ -228,7 +228,7 @@ cat << EOD | sudo /usr/bin/bcrypt -o "$MOUNTPOINT"/"$FULLPATH"/$TARGETFILE 2>/de
 "$KEY"
 EOD
        if [ "$?" != 0 ]; then failed; fi
-       echo "Done."
+       echo -e "\nDone."
      fi
      clean_up 0
   else
@@ -258,7 +258,7 @@ EOD
     echo -n "Restoring backup files from $MOUNTPOINT/$FULLPATH/${MYDATA}.tgz "
     sudo /bin/tar -C / -zxf $MOUNTPOINT/"$FULLPATH"/${MYDATA}.tgz 2>/dev/null &
     rotdash $!
-    echo "Done."
+    echo -e "\nDone."
   fi
   clean_up 0
 fi
