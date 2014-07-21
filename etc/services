@@ -201,6 +201,8 @@ radius		1812/tcp			# Radius
 radius		1812/udp			# Radius
 radacct		1813/tcp			# Radius Accounting
 radacct		1813/udp			# Radius Accounting
+nfs		2049/tcp			# Network File System
+nfs		2049/udp			# Network File System
 cvspserver	2401/tcp			# CVS client/server operations
 cvspserver	2401/udp			# CVS client/server operations
 venus		2430/tcp			# codacon port
