@@ -31,7 +31,7 @@ then
             then 
                 break
             fi
-            cnt=0
+            CNT=0
             NRT=$((NRT+1))
         fi
 
