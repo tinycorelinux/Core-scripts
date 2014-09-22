@@ -1,16 +1,41 @@
 #!/bin/sh
 # (c) Robert Shingledecker 2012
+#     Bela Markus 2014
+
 # Wait for network to come up and then set time
+
 CNT=0
 until ifconfig | grep -q Bcast
 do
-	[ $((CNT++)) -gt 60 ] && break || sleep 1
+    [ $((CNT++)) -gt 60 ] && break || sleep 1
 done
+
 if [ $CNT -le 60 ]
 then
-	CNT=0
-	until /usr/bin/getTime.sh >/dev/null 2>&1
-	do
-		[ $((CNT++)) -gt 5 ] && break || sleep 1
-	done
+    CNT=9999
+    NRT=0
+    while sleep 0
+    do
+        XXX=$(/bin/date -I)
+        XXX=${XXX:0:4}
+
+        if [ "$XXX" -ge "2010" ];
+        then
+            break
+        fi
+
+        if [ $CNT -gt 10 ];
+        then
+            /usr/bin/getTime.sh
+            if [ $NRT -gt 5 ];
+            then 
+                break
+            fi
+            cnt=0
+            NRT=$((NRT+1))
+        fi
+
+    CNT=$((CNT+1))
+    sleep 1
+    done
 fi
