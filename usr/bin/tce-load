@@ -84,12 +84,19 @@ fetch_app() {
 }
 
 push_dep(){
-	DEPLIST="${1}/${DEPLIST}"
+	eval "dep$depi=$1"
+	depi=$((depi + 1))
 }
 
 pop_dep(){
-	F="${DEPLIST%%/*}"
-	DEPLIST="${DEPLIST#*/}"
+	if [ "$depi" -eq 0 ]; then
+		unset F
+		return
+	fi
+	depi=$((depi - 1))
+	cur=dep$depi
+	F=`eval "echo \\$$cur"`
+	unset $cur
 }
 
 copyInstall() {
@@ -217,6 +224,7 @@ APPNAME=${TARGETAPP%%.tcz}
 if [ ${TARGETAPP} == ${APPNAME} ]; then TARGETAPP=${TARGETAPP}.tcz; fi
 APPNAME="${APPNAME/-KERNEL/-${KERNELVER}}"
 TARGETAPP="${TARGETAPP/-KERNEL.tcz/-${KERNELVER}.tcz}"
+depi=0
 
 # If load local or install then also check if already installed.
 # Download only OK.
