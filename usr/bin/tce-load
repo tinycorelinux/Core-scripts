@@ -83,22 +83,6 @@ fetch_app() {
 	fi
 }
 
-push_dep(){
-	eval "dep$depi=$1"
-	depi=$((depi + 1))
-}
-
-pop_dep(){
-	if [ "$depi" -eq 0 ]; then
-		unset F
-		return
-	fi
-	depi=$((depi - 1))
-	cur=dep$depi
-	F=`eval "echo \\$$cur"`
-	unset $cur
-}
-
 copyInstall() {
 	[ -d /mnt/test ] || sudo /bin/mkdir -p /mnt/test
 	sudo /bin/mount $1 /mnt/test -t squashfs -o loop,ro,bs=4096
@@ -175,36 +159,51 @@ install(){
 	fi
 }
 
-local_recursive_scan() {
-	EXT="${1//-KERNEL.tcz/-${KERNELVER}.tcz}"
-	push_dep ${EXT}
-	deps=""
-	if [ -f ${EXT}.dep ]; then
-		deps=$( cat ${EXT}.dep )
-		for d in $deps; do
-			local_recursive_scan $d
-		done
-	fi
-}
-
-remote_recursive_scan() {
-	EXT="${1//-KERNEL.tcz/-${KERNELVER}.tcz}"
-	push_dep ${EXT}
-	deps=""
-	deps=$( cat "${FROMWHERE}/${EXT}.dep" )
-	for d in $deps; do
-		d="${d//-KERNEL.tcz/-${KERNELVER}.tcz}"
-		push_dep ${d}
-		if [ ! -f ${d}.dep ]; then
-			wget -c -P "$FROMWHERE" "$MIRROR"/"$d".dep 2>/dev/null
-			if [ "$?" == 0 ]; then
-				[ "$SUPPRESS" ] || echo ${d}.dep OK
-				remote_recursive_scan $d
-			fi
-		else
-			remote_recursive_scan $d
-		fi
-	done
+recursive_scan_dep() {
+	echo -e "$@"|awk '
+	function recursive_scan(name, optional, mirror, _, depfile, line, i) {
+		if (name) {
+			sub(/\-KERNEL\.tcz/, "-"KERNELVER".tcz", name)
+			if (name in MARK) {
+				if (MARK[name] == 2) {
+					if (! SUPPRESS)
+						system("echo Warning loop dependency: "name" 1>&2")
+				} else {
+					for (i=IRANGE[name"#1"]; i<=IRANGE[name"#2"]; i++) {
+						IDX+=1
+						RESULT[IDX]=RESULT[i]
+					}
+				}
+			} else {
+				IDX+=1
+				RESULT[IDX]=name
+				IRANGE[name"#1"]=IDX
+				depfile=optional"/"name".dep"
+				if (mirror && (system("test ! -f "depfile) == 0 || system("test ! -f "optional"/"name) == 0))
+					if (system("rm -f "depfile"; wget -c -P "optional" "mirror"/"name".dep 2>/dev/null") == 0 && ! SUPPRESS)
+						system("echo "name".dep OK 1>&2")
+				MARK[name]=2
+				if (mirror || system("test -f "optional"/"name) == 0) {
+					while (getline line < depfile > 0)
+						recursive_scan(line, optional, mirror)
+					close(depfile)
+				}
+				MARK[name]=1
+				IRANGE[name"#2"]=IDX
+			}
+		}
+	}
+	BEGIN {KERNELVER="'"$KERNELVER"'"; SUPPRESS="'"$SUPPRESS"'"; IDX=0;}
+	{recursive_scan($1, substr($2, 1, 1)=="/" ? $2 : ENVIRON["PWD"], $3);}
+	END {
+		for (i=IDX; i>=1; i--) {
+			name=RESULT[i]
+			if (! (name in PRINTED)) {
+				print name
+				PRINTED[name]=1
+			}
+		}
+	}'
 }
 
 # Main
@@ -243,30 +242,17 @@ if [ "$WGET" ]; then
 	fi
 	getMirror
 	[ -d "$TCEDIR"/optional ] || mkdir -p "$TCEDIR"/optional
+	EXTENSION=`basename "$TARGETAPP"`
 	FROMWHERE="$TCEDIR"/optional
 	cd "$FROMWHERE"
-	EXTENSION=`basename "$TARGETAPP"`
 
-	DEPLIST="$EXTENSION".dep
-	[ -f "$DEPLIST" ] && [ ! -f "$EXTENSION" ] && rm -f "$DEPLIST"
-	wget -cq "$MIRROR"/"$DEPLIST" 2>/dev/null
-	if [ "$?" == 0 ]; then
-		DEPLIST=""
-		remote_recursive_scan ${EXTENSION}
-		pop_dep
-		while [ "$F" ]; do
-			F="${F##*/}"
-			[ -f "$F" ] || fetch_app "$F"
-			md5sum -cs "$F".md5.txt
-			[ "$?" == 0 ] || fetch_app "$F"
-			[ -f /usr/local/tce.installed/"${F%.tcz}" ] || install "$F"
-			pop_dep
-		done
-		DEPLIST=""
-	else
-		fetch_app "$EXTENSION"
-		install "$EXTENSION"
-	fi
+	recursive_scan_dep "$EXTENSION" "$FROMWHERE" "$MIRROR" | while read F; do
+		F="${F##*/}"
+		[ -f "$F" ] || fetch_app "$F"
+		md5sum -cs "$F".md5.txt
+		[ "$?" == 0 ] || fetch_app "$F"
+		[ -f /usr/local/tce.installed/"${F%.tcz}" ] || install "$F"
+	done
 	[ "$DOWNLOAD_ONLY" ] && [ "$ONDEMAND" ] && ondemand "$EXTENSION"
 fi
 
@@ -280,30 +266,22 @@ if [ -z "$WGET" ]; then
 			abort_to_saved_dir
 		fi
 	fi
-	FROMWHERE=`dirname "$TARGETAPP"` && cd "$FROMWHERE"
 	EXTENSION=`basename "$TARGETAPP"`
-	if [ -f "$EXTENSION".dep ]; then
-		DEPLIST=""
-		local_recursive_scan ${EXTENSION}
-		pop_dep
-		while [ "$F" ]; do
-			F="${F##*/}"
-			DEPFILE="$F"
-			if [ ! -f /usr/local/tce.installed/"${F%.*}" ]; then
-				if [ -f "$DEPFILE" ]; then
-					install "$DEPFILE"
-					[ "$SUPPRESS" ] || echo "$DEPFILE: OK"
-				else
-					echo "$DEPFILE not found!"
-					abort_to_saved_dir
-				fi
+	FROMWHERE=`dirname "$TARGETAPP"`
+	cd "$FROMWHERE"
+
+	recursive_scan_dep "$EXTENSION" "$FROMWHERE" | while read F; do
+		F="${F##*/}"
+		if [ ! -f /usr/local/tce.installed/"${F%.*}" ]; then
+			if [ -f "$F" ]; then
+				install "$F"
+				[ "$SUPPRESS" ] || echo "$F: OK"
+			else
+				echo "$F not found!"
+				abort_to_saved_dir
 			fi
-			pop_dep
-		done
-	else
-		install "$TARGETAPP"
-		[ "$SUPPRESS" ] || echo "$TARGETAPP: OK"
-	fi
+		fi
+	done
 fi
 
 cd "$SAVED_DIR"
