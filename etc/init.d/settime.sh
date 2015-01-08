@@ -1,6 +1,6 @@
 #!/bin/sh
 # (c) Robert Shingledecker 2012
-#     Bela Markus 2014
+#     Bela Markus 2015
 
 # Wait for network to come up and then set time
 
@@ -19,7 +19,7 @@ then
         XXX=$(/bin/date -I)
         XXX=${XXX:0:4}
 
-        if [ "$XXX" -ge "2010" ];
+        if [ "$XXX" -ge "2015" ];
         then
             break
         fi
