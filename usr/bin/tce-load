@@ -223,7 +223,6 @@ APPNAME=${TARGETAPP%%.tcz}
 if [ ${TARGETAPP} == ${APPNAME} ]; then TARGETAPP=${TARGETAPP}.tcz; fi
 APPNAME="${APPNAME/-KERNEL/-${KERNELVER}}"
 TARGETAPP="${TARGETAPP/-KERNEL.tcz/-${KERNELVER}.tcz}"
-depi=0
 
 # If load local or install then also check if already installed.
 # Download only OK.
