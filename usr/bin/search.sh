@@ -10,16 +10,18 @@ fi
 # Now $* is the search targets 
 [ -z "$1" ] && exit 1
 
-if [ ! -f tags.db ]; then
+fetchtags() {
 	tce-fetch.sh tags.db.gz || exit 1
 	gunzip -f tags.db.gz
 	touch tags.db
+}
+
+if [ ! -f tags.db ]; then
+	fetchtags
 else # Check if the file is older than 5 hours
 	age=$((`date +%s` - `date -r tags.db +%s`))
 	if [ $age -ge 18000 ]; then
-		tce-fetch.sh tags.db.gz || exit 1
-		gunzip -f tags.db.gz
-		touch tags.db
+		fetchtags
 	fi
 fi
 
