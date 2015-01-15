@@ -3,7 +3,7 @@
 useBusybox
 cd /tmp
 SEARCH="NAME"
-if [ "$1" == "-t" ]; then
+if [ "$1" == "-t" -a "$2" ]; then
 	SEARCH="TAGS"
 	shift
 fi
@@ -24,25 +24,23 @@ else # Check if the file is older than 5 hours
 fi
 
 if [ "$SEARCH" == "NAME" ]; then
-	grep -i ^$1 tags.db | cut -f1
+	awk -v word="$1" '
+	BEGIN {IGNORECASE=1;}
+	{name=$1; sub(/\.\w+$/, "", name); if (name ~ word) print $1;}
+	' tags.db
 else
-	I=1
-	IN="tags.db"
-	OUT=`mktemp`
-	RESULTS="tags.lst"
-	while [ -n "$1" ]
-	do
-		if [ "$I" == 1 ]
-		then
-			grep -i "$1" "$IN" > "$OUT"
-		else
-			grep -i "$1" "$RESULTS" > "$OUT"
-		fi
-		cp "$OUT" "$RESULTS"
-		shift
-		I=`expr "$I" + 1`
-	done
-	rm "$OUT"
-	cat "$RESULTS" | awk '{print $1}'
-#	cat "$RESULTS"
+	words="$@"
+	awk '
+	BEGIN {IGNORECASE=1; split("'"$words"'", ws);}
+	{	ok=1
+		line=$0
+		sub(/\.\w+\s/, " ", line)
+		for (i in ws) {
+			if (line !~ ws[i]) {
+				ok=0
+				break
+			}
+		}
+		if (ok) print $1
+	}' tags.db
 fi
