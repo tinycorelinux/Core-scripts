@@ -6,7 +6,6 @@ getMirror
 KERNELVER=$(uname -r)
 TCE_DB="tce.db"
 TCE_LST="tce.lst"
-DEP_WORK="/tmp/tce.dep.lst"
 AUDIT_RESULTS="/tmp/audit_results.txt"
 AUDIT_WORK="/tmp/audit_work.txt"
 AUDIT_MARKED="/tmp/audit_marked.lst"
@@ -36,20 +35,6 @@ else
 	[ ${EXTNAME%%.tcz} == ${EXTNAME} ] && EXTNAME=${EXTNAME}.tcz
 	EXTNAME="${EXTNAME/-KERNEL/-${KERNELVER}}"
 fi
-
-local_recursive_scan() {
-	EXT="${1//-KERNEL.tcz/-${KERNELVER}.tcz}"
-# Don't need duplicates in the database
-	grep -q "^${EXT}$" "$DEP_WORK"
-	[ "$?" == 0 ]  || echo ${EXT} >> "$DEP_WORK"
-	deps=""
-	if [ -f ${EXT}.dep ]; then
-		deps=`cat ${EXT}.dep`
-		for d in $deps; do
-			local_recursive_scan $d
-		done
-	fi
-}
 
 updatedeps(){
 	echo -n "Updating .dep files from "
@@ -82,18 +67,60 @@ builddb(){
 	> "$TCE_LST"
 	echo -n "Building Extension Database from "
 	echo "$TCEDIR"
-	ls *.tcz 2>/dev/null | while read F
-	do
-		TARGET=${F##/*/}
-		TARGET="${TARGET/-KERNEL/-${KERNELVER}}"
-		echo "$TARGET" >> "$TCE_LST"
-		> "$DEP_WORK"
-		echo -n "."
-		local_recursive_scan "$TARGET"
-		cat "$DEP_WORK" >> "$TCE_DB"
-		echo "" >> "$TCE_DB"
-	done
-	sort -f "$TCE_LST" > /tmp/sort.$$ && mv /tmp/sort.$$ "$TCE_LST" 2>/dev/null
+	ls *.tcz 2>/dev/null | sed 's/.*\///' | awk -v tce_lst="$TCE_LST" -v tce_db="$TCE_DB" '
+	function recursive_scan(name, optional, _, depfile, line, i, x) {
+		if (name) {
+			sub(/\-KERNEL\.tcz/, "-"KERNELVER".tcz", name)
+			if (name in MARK) {
+				if (MARK[name] == 2) {
+					RESULT[++IDX] = name
+					for (x in MARK) {
+						if (MARK[x] == 2) {
+							LOOP[x] = name
+							if (DEPTH[x] >= DEPTH[name])
+								LOOPITEM[name] = LOOPITEM[name]"\n"x
+						}
+					}
+				} else {
+					for (i=IRANGE[name"#1"]; i<=IRANGE[name"#2"]; i++)
+						RESULT[++IDX] = RESULT[i]
+				}
+			} else {
+				RESULT[++IDX] = name
+				IRANGE[name"#1"] = IDX
+				MARK[name] = 2
+				DEPTH[name] = ++DEPTHNUM
+				if (system("test -f "optional"/"name) == 0) {
+					depfile=optional"/"name".dep"
+					while (getline line < depfile > 0)
+						recursive_scan(line, optional)
+					close(depfile)
+				}
+				MARK[name] = 1
+				DEPTHNUM --
+				IRANGE[name"#2"] = IDX
+			}
+		}
+	}
+	BEGIN {KERNELVER="'"$KERNELVER"'"; IDX=0; DEPTHNUM=0;}
+	{recursive_scan($1, substr($2, 1, 1)=="/" ? $2 : ENVIRON["PWD"]); if (NR%5==0) system("echo -n .");}
+	END {
+		for (name in MARK)
+			print name >> tce_lst
+		system("busybox sort -f "tce_lst" > /tmp/sort.$$ && mv /tmp/sort.$$ "tce_lst" 2>/dev/null")
+		while (getline name < ENVIRON["PWD"]"/"tce_lst > 0) {
+			for (i=IRANGE[name"#1"]; i<=IRANGE[name"#2"]; i++) {
+				if (! (RESULT[i] in PRINTED)) {
+					print RESULT[i] >> tce_db
+					PRINTED[RESULT[i]] = 1
+				}
+			}
+			delete PRINTED
+			if (name in LOOP)
+				print "Warning loop dependencies:"LOOPITEM[LOOP[name]] >> tce_db
+			print "" >> tce_db
+		}
+	}'
 	echo
 }
 
