@@ -69,6 +69,7 @@ builddb(){
 	echo "$TCEDIR"
 	ls *.tcz 2>/dev/null | sed 's/.*\///' | awk -v tce_lst="$TCE_LST" -v tce_db="$TCE_DB" '
 	function recursive_scan(name, optional, _, depfile, line, i, x) {
+		gsub(/[\t ]+/, "", name)
 		if (name) {
 			sub(/\-KERNEL\.tcz/, "-"KERNELVER".tcz", name)
 			if (name in MARK) {
@@ -103,7 +104,7 @@ builddb(){
 		}
 	}
 	BEGIN {KERNELVER="'"$KERNELVER"'"; IDX=0; DEPTHNUM=0;}
-	{recursive_scan($1, substr($2, 1, 1)=="/" ? $2 : ENVIRON["PWD"]); if (NR%5==0) system("echo -n .");}
+	{recursive_scan($1, substr($2, 1, 1)=="/" ? $2 : ENVIRON["PWD"]); if (NR%5==0) printf ".";}
 	END {
 		for (name in MARK)
 			print name >> tce_lst

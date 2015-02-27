@@ -30,7 +30,7 @@ abort(){
 	echo " Download into tce/optional directory, updates OnBoot and installs:"
 	echo "   tce-load -w -i nano.tcz"
 	echo " Download only into tce/optional directory:"
- 	echo "   tce-load -w nano.tcz"
+	echo "   tce-load -w nano.tcz"
 	exit 2
 }
 
@@ -162,6 +162,7 @@ install(){
 recursive_scan_dep() {
 	echo -e "$@"|awk '
 	function recursive_scan(name, optional, mirror, _, depfile, line, i) {
+		gsub(/[\t ]+/, "", name)
 		if (name) {
 			sub(/\-KERNEL\.tcz/, "-"KERNELVER".tcz", name)
 			if (name in MARK) {
