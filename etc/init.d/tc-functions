@@ -50,11 +50,7 @@ return "$?"
 }
 
 getbasefile(){
-BASENAME=`basename $1`
-FIELDS=`echo $BASENAME|awk 'BEGIN{ FS="."} {print NF}'`
-FIELDS=`busybox expr "$FIELDS" - "$2"`
-INFO=`echo $BASENAME|cut -f1-$FIELDS -d.`
-echo $INFO
+echo -e "${1##*/}"|awk -v n="$2" '{for (i=n; i>0; i--) sub(/\.[^\.]*$/, ""); print;}'
 return 0
 }
 
