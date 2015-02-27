@@ -140,7 +140,6 @@ install(){
 			awk -v appname="/tmp/tcloop/$APPNAME" ' { if ( $2 == appname )  exit 1 }' /etc/mtab
 			[ "$?" == 1 ] || sudo /bin/mount "$THISAPP" /tmp/tcloop/"$APPNAME" -t squashfs -o loop,ro,bs=4096 2>&1
 			[ "$?" == 0 ] || abort_to_saved_dir
-			[ -z "`ls /tmp/tcloop/${APPNAME}`" ] && EMPTYEXT=1
 			[ "`find /tmp/tcloop/${APPNAME} -mindepth 1 -maxdepth 2 | wc -l`" -le 1 ] && EMPTYEXT=1
 
 			if [ -z "$EMPTYEXT" ]; then
