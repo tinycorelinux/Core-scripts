@@ -4,8 +4,8 @@
 useBusybox
 getMirror
 KERNELVER=$(uname -r)
-TCE_DB="tce.db"
-TCE_LST="tce.lst"
+TCE_DB="/tmp/tce.db"
+TCE_LST="/tmp/tce.lst"
 AUDIT_RESULTS="/tmp/audit_results.txt"
 AUDIT_WORK="/tmp/audit_work.txt"
 AUDIT_MARKED="/tmp/audit_marked.lst"
