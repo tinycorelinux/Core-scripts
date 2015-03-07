@@ -151,11 +151,16 @@ else
 fi
 
 # Finally check for CD Extensions if requested
-if [ "$CDE" -a -s /etc/sysconfig/cdroms ]; then
-	for DEV in `cat /etc/sysconfig/cdroms`; do
-		process_CD
-	done 
-fi			
+if [ "$CDE" ]; then
+	# Some cd drives are slow - if cde was requested, wait for udev to settle
+	[ ! -s /etc/sysconfig/cdroms ] && udevadm settle --timeout 5
+
+	if [ -s /etc/sysconfig/cdroms ]; then
+		for DEV in `cat /etc/sysconfig/cdroms`; do
+			process_CD
+		done
+	fi
+fi
 
 # If nothing loaded then also check for pseudo CD, e.g., isohybrid
 if [ "$CDE" -a -z "$CDELIST" ]; then
