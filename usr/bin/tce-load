@@ -251,7 +251,7 @@ if [ "$WGET" ]; then
 		md5sum -cs "$F".md5.txt
 		[ "$?" == 0 ] || fetch_app "$F"
 		[ -f /usr/local/tce.installed/"${F%.tcz}" ] || install "$F"
-	done
+	done || exit 1 # subshell cannot exit directly
 	[ "$DOWNLOAD_ONLY" ] && [ "$ONDEMAND" ] && ondemand "$EXTENSION"
 fi
 
@@ -280,7 +280,7 @@ if [ -z "$WGET" ]; then
 				abort_to_saved_dir
 			fi
 		fi
-	done
+	done || exit 1 # subshell cannot exit directly
 fi
 
 cd "$SAVED_DIR"
