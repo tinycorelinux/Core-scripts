@@ -16,7 +16,7 @@ if [ -s /tmp/audit_marked.lst ]; then
       else
 	echo "$F"
 	rm -f "$F"*
-	LIST="$TCEDIR"/copy2ram.lst; ONBOOT="${TCEDIR}/${ONBOOTNAME}"; XWBAR="$TCEDIR"/xwbar.lst
+	LIST="$TCEDIR"/copy2fs.lst; ONBOOT="${TCEDIR}/${ONBOOTNAME}"; XWBAR="$TCEDIR"/xwbar.lst
 	if grep -w "$EXTN" "$LIST" >/dev/null 2>&1; then sed -i '/'"$EXTN"'/d' "$LIST"; fi
 	if grep -w "$EXTN" "$ONBOOT" >/dev/null 2>&1; then sed -i '/'"$EXTN"'/d' "$ONBOOT"; fi
 	if grep -w "$EXTN" "$XWBAR" >/dev/null 2>&1; then sed -i '/'"$EXTN"'/d' "$XWBAR"; fi
