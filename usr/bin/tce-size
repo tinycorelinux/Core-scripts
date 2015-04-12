@@ -59,7 +59,7 @@ if [ -n "$app" ]; then
 		touch sizelist
 	fi
    fi
-   tce-fetch.sh "$app".tree || exit 1
+   tce-fetch.sh "$app".tree >/dev/null 2>&1 || echo "$app" > "$app".tree
 
    totalsize_needed=0
    totalsize_installed=0
