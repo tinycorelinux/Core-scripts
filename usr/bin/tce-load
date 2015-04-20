@@ -169,10 +169,7 @@ recursive_scan_dep() {
 					if (! SUPPRESS)
 						system("echo Warning loop dependency: "name" 1>&2")
 				} else {
-					for (i=IRANGE[name"#1"]; i<=IRANGE[name"#2"]; i++) {
-						IDX+=1
-						RESULT[IDX]=RESULT[i]
-					}
+					RESULT[++IDX]="@#"name
 				}
 			} else {
 				IDX+=1
@@ -193,17 +190,23 @@ recursive_scan_dep() {
 			}
 		}
 	}
-	BEGIN {KERNELVER="'"$KERNELVER"'"; SUPPRESS="'"$SUPPRESS"'"; IDX=0;}
-	{recursive_scan($1, substr($2, 1, 1)=="/" ? $2 : ENVIRON["PWD"], $3);}
-	END {
-		for (i=IDX; i>=1; i--) {
+	function output(idx1, idx2, _, name, i, refname) {
+		for (i=idx2; i>=idx1; i--) {
 			name=RESULT[i]
 			if (! (name in PRINTED)) {
-				print name
 				PRINTED[name]=1
+				if (substr(name, 1, 2) == "@#") {
+					refname = substr(name, 3)
+					output(IRANGE[refname"#1"]+0, IRANGE[refname"#2"])
+				} else {
+					print name
+				}
 			}
 		}
-	}'
+	}
+	BEGIN {KERNELVER="'"$KERNELVER"'"; SUPPRESS="'"$SUPPRESS"'"; IDX=0;}
+	{pi=IDX; recursive_scan($1, substr($2, 1, 1)=="/" ? $2 : ENVIRON["PWD"], $3); output(pi+1, IDX);}
+	'
 }
 
 # Main
