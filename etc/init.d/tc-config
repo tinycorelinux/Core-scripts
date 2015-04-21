@@ -344,16 +344,19 @@ if [ -n "$NFSMOUNT" ]; then
 	[ "$OPTS" == "no-ping" ] && NOPING=1 || NOPING=0
 	[ -z "$DHCP_RAN" ] && wait4Server $SERVER $NOPING
 	wait $fstab_pid
-	if [ -x /usr/local/etc/init.d/nfs-client ] ; then
-	   /usr/local/etc/init.d/nfs-client start
-	   NOLOCK="";
-	else
-	   NOLOCK=",nolock"
-	fi
-	echo "${SERVER}:${DIR} /mnt/nfs nfs defaults${NOLOCK} 0 0" >> /etc/fstab
-	[ $SHOWAPPS ] && echo "Mounting ${SERVER}:${DIR}"
 	mkdir /mnt/nfs
-	mount /mnt/nfs >/dev/null 2>&1
+ 	[ $SHOWAPPS ] && echo "Mounting ${SERVER}:${DIR}"
+ 	if [ -x /usr/local/etc/init.d/nfs-client ]; then
+ 		/usr/local/etc/init.d/nfs-client start
+ 		if /usr/local/sbin/mount.nfs4 "${SERVER}:${DIR}" /mnt/nfs 2>/dev/null; then
+ 			echo "${SERVER}:${DIR} /mnt/nfs nfs4 defaults 0 0" >>/etc/fstab
+ 		elif mount "${SERVER}:${DIR}" /mnt/nfs 2>/dev/null; then
+ 			echo "${SERVER}:${DIR} /mnt/nfs nfs defaults 0 0" >>/etc/fstab
+ 		fi
+ 	elif mount -o nolock "${SERVER}:${DIR}" /mnt/nfs 2>/dev/null; then
+ 		echo "${SERVER}:${DIR} /mnt/nfs nfs defaults,nolock 0 0" >>/etc/fstab
+ 	else echo "${RED}Mounting ${SERVER}:${DIR} failed${NORMAL}"
+ 	fi
 fi
 
 touch /var/tmp/k5_skip
