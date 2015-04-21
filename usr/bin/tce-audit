@@ -83,8 +83,7 @@ builddb(){
 						}
 					}
 				} else {
-					for (i=IRANGE[name"#1"]; i<=IRANGE[name"#2"]; i++)
-						RESULT[++IDX] = RESULT[i]
+					RESULT[++IDX] = "@#"name
 				}
 			} else {
 				RESULT[++IDX] = name
@@ -103,19 +102,29 @@ builddb(){
 			}
 		}
 	}
+	function output(idx1, idx2, _, name, i, refname) {
+		for (i=idx1; i<=idx2; i++) {
+			name=RESULT[i]
+			if (! (name in PRINTED)) {
+				PRINTED[name]=1
+				if (substr(name, 1, 2) == "@#") {
+					refname = substr(name, 3)
+					output(IRANGE[refname"#1"], IRANGE[refname"#2"]+0)
+				} else {
+					print name >> tce_db
+				}
+			}
+		}
+	}
 	BEGIN {KERNELVER="'"$KERNELVER"'"; IDX=0; DEPTHNUM=0;}
 	{recursive_scan($1, substr($2, 1, 1)=="/" ? $2 : ENVIRON["PWD"]); if (NR%5==0) printf ".";}
 	END {
 		for (name in MARK)
 			print name >> tce_lst
+		close(tce_lst)
 		system("busybox sort -f "tce_lst" > /tmp/sort.$$ && mv /tmp/sort.$$ "tce_lst" 2>/dev/null")
-		while (getline name < ENVIRON["PWD"]"/"tce_lst > 0) {
-			for (i=IRANGE[name"#1"]; i<=IRANGE[name"#2"]; i++) {
-				if (! (RESULT[i] in PRINTED)) {
-					print RESULT[i] >> tce_db
-					PRINTED[RESULT[i]] = 1
-				}
-			}
+		while (getline name < tce_lst > 0) {
+			output(IRANGE[name"#1"], IRANGE[name"#2"]+0)
 			delete PRINTED
 			if (name in LOOP)
 				print "Warning loop dependencies:"LOOPITEM[LOOP[name]] >> tce_db
