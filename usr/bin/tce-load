@@ -239,10 +239,8 @@ if [ "$WGET" ]; then
 
 	recursive_scan_dep "$EXTENSION" "$FROMWHERE" "$MIRROR" | while read F; do
 		F="${F##*/}"
-		[ -f "$F" ] || fetch_app "$F"
-		md5sum -cs "$F".md5.txt
-		[ "$?" == 0 ] || fetch_app "$F"
-		[ -f /usr/local/tce.installed/"${F%.tcz}" ] || install "$F"
+		app_exists "$F" "." || fetch_app "$F"
+		[ -f "$TCEINSTALLED/${F%.*}" ] || install "$F"
 	done || exit 1 # subshell cannot exit directly
 	[ "$DOWNLOAD_ONLY" ] && [ "$ONDEMAND" ] && ondemand "$EXTENSION"
 fi
@@ -263,7 +261,7 @@ if [ -z "$WGET" ]; then
 
 	recursive_scan_dep "$EXTENSION" "$FROMWHERE" | while read F; do
 		F="${F##*/}"
-		if [ ! -f /usr/local/tce.installed/"${F%.*}" ]; then
+		if [ ! -f "$TCEINSTALLED/${F%.*}" ]; then
 			if [ -f "$F" ]; then
 				install "$F"
 				[ "$SUPPRESS" ] || echo "$F: OK"
