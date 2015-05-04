@@ -13,6 +13,8 @@ SAVED_DIR=`pwd`
 
 ONBOOTNAME="$(getbootparam lst 2>/dev/null)"
 [ -n "$ONBOOTNAME" ] || ONBOOTNAME="onboot.lst"
+TCEINSTALLED=/usr/local/tce.installed
+TCEDIR=/etc/sysconfig/tcedir
 
 abort(){
 	echo "Version `version`";
@@ -40,7 +42,7 @@ abort_to_saved_dir(){
 	exit 1
 }
 
-while getopts wilcbosf OPTION
+while getopts wilcbosft: OPTION
 do
 	case ${OPTION} in
 		w) WGET=TRUE ;;
@@ -51,6 +53,7 @@ do
 		o) ONDEMAND=TRUE ;;
 		s) SUPPRESS=TRUE ;;
 		f) FORCE="y" ;;
+		t) TCEDIR="$OPTARG" ;;
 		*) abort ;;
 	esac
 done
@@ -211,11 +214,9 @@ recursive_scan_dep() {
 
 # Main
 echo "0" > /tmp/appserr
-TCEDIR=/etc/sysconfig/tcedir
 [ -d "$TCEDIR" ] || exit 1
 [ -n "$1" ] || exit 1
 [ -f /etc/sysconfig/showapps ] && SHOWAPPS=TRUE && SUPPRESS=TRUE
-TCEINSTALLED=/usr/local/tce.installed
 #  Check for download only
 [ -z "$INSTALL" ] && DOWNLOAD_ONLY=1
 [ -z "$WGET" ] && [ "$INSTALL" ] && LOAD_ONLY=1
