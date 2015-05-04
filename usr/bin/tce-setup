@@ -45,16 +45,15 @@ process_normal_tcedir() {
 	if [ "$(ls -A "$TCEDIR"/*.gz 2>/dev/null)" ]; then
 		process_gz "$TCEDIR"
 	fi
-	
+
 	if [ -d "$TCEDIR"/optional/upgrade ] && [ "$(ls -A "$TCEDIR"/optional/upgrade 2>/dev/null)" ]; then
 		echo -n "${GREEN}Performing upgrade from $TCEDIR/optional/upgrade. ${NORMAL}"
 		yes y | cp -ai "$TCEDIR"/optional/upgrade/* "$TCEDIR"/optional/. 2>/dev/null && rm -rf "$TCEDIR"/optional/upgrade
 		echo "${YELLOW}Done.${NORMAL}"
 	fi
-#	Process regular extensions	
-	LOADFROM="$TCEDIR"/optional
+#	Process regular extensions
 	ONBOOT="$TCEDIR"/"$TARGETLIST"
-	[ -s "$ONBOOT" ] && for FILE in `cat "$ONBOOT"`; do FILE="$LOADFROM/$FILE" && process; done
+	[ -s "$ONBOOT" ] && process "$ONBOOT"
 	sync
 }
 
@@ -80,13 +79,10 @@ process_gz() {
 }
 
 process() {
-	BASENAME=`basename "$FILE"`
-	APPNAME="${BASENAME%.tcz}"
-	[ -f "$TCEINSTALLED"/"$APPNAME" ] && return
-	FLAGS=" -i -b "
-	su "$USER" -c 'tce-load '"$FLAGS"' '"$FILE"
+	[ -f "$1" ] && applist=$(awk -v ORS=" " '{gsub(/#.*/, ""); if ($1~/\w/) print $1;}' "$1")
+	[ "$applist" ] && su "$USER" -c "tce-load -i -b -t `dirname $1` $applist"
 	if [ -s /tmp/aberr ]; then
-		echo "occured while loading: " "$FILE" >> /tmp/aberr
+		echo "occured while loading:  $applist" >> /tmp/aberr
 		exit 1
 	fi
 }
@@ -99,10 +95,7 @@ process_CD() {
 			LOADFROM="$CD"/cde/optional
 			CDELIST="$CD"/cde/"$TARGETLIST"
 			if [ -s "$CDELIST" ]; then
-				while read FILE; do
-					FILE="$LOADFROM/$FILE"
-					process
-				done < "$CDELIST"
+				process "$CDELIST"
 				echo "$LOADFROM" > /etc/sysconfig/cde
 			fi
 		else
@@ -133,8 +126,7 @@ fi
 # Next Check for any tcz initrd builtins
 if [ -d /tmp/builtin ] && [ "$(ls -A /tmp/builtin 2>/dev/null)" ]; then
 	TCEDIR=/tmp/builtin
-	LOADFROM="$TCEDIR"/optional
-	[ -s "$TCEDIR"/"$TARGETLIST" ] && for FILE in `cat "$TCEDIR"/"$TARGETLIST"`; do FILE="$LOADFROM/$FILE" && process; done
+	[ -s "$TCEDIR"/"$TARGETLIST" ] && process "$TCEDIR"/"$TARGETLIST"
 fi
 
 # Next process regular extensions unless BASE boot option has been specified.
