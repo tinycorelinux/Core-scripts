@@ -61,18 +61,7 @@ shift `expr $OPTIND - 1`
 [ -z "$1" ] || ( [ -z "$WGET" ] && [ -z "$INSTALL" ] ) && abort
 
 app_exists() {
-	EXISTS=1
-	if [ -f "$TCEDIR"/optional/"$TARGETAPP" ]
-	then
-		if [ -f "$TCEDIR"/optional/"$TARGETAPP".md5.txt ]
-		then
-			cd "$TCEDIR"/optional
-			md5sum -cs "$TCEDIR"/optional/"$TARGETAPP".md5.txt
-			EXISTS="$?"
-			cd - > /dev/null
-		fi
-	fi
-	return "$EXISTS"
+	[ -f "$2/$1" ] && [ -f "$2/$1".md5.txt ] && (cd "$2" && md5sum -cs "$1".md5.txt)
 }
 
 fetch_app() {
@@ -238,8 +227,7 @@ if [ "$INSTALL" ] && [ ! "$BOOTING" ]; then
 fi
 
 if [ "$WGET" ]; then
-	if app_exists
-	then
+	if app_exists "$TARGETAPP" "$TCEDIR/optional"; then
 		echo "$APPNAME is already downloaded."
 		continue
 	fi
