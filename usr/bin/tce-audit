@@ -120,7 +120,7 @@ builddb(){
 	{recursive_scan($1, substr($2, 1, 1)=="/" ? $2 : ENVIRON["PWD"]); if (NR%5==0) printf ".";}
 	END {
 		for (name in MARK)
-			print name >> tce_lst
+			system("test -f " name " && echo " name " >> " tce_lst)
 		close(tce_lst)
 		system("busybox sort -f "tce_lst" > /tmp/sort.$$ && mv /tmp/sort.$$ "tce_lst" 2>/dev/null")
 		while (getline name < tce_lst > 0) {
