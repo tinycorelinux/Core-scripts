@@ -37,9 +37,13 @@ abort(){
 }
 
 abort_to_saved_dir(){
-	cd "$SAVED_DIR"
 	echo "1" > /tmp/appserr
-	exit 1
+	if [ "$BOOTING" ]; then
+		SKIP=TRUE
+	else
+		#cd "$SAVED_DIR"
+		exit 1
+	fi
 }
 
 while getopts wilcbosft: OPTION
@@ -118,7 +122,7 @@ install(){
 	fi
 
 	THISAPP="$1"
-	APPNAME=$(getbasefile "$THISAPP" 1)
+	APPNAME="${THISAPP%.*}"
 
 	if [ "$INSTALL" ]; then
 		if [ "$COPYINSTALL" ] || [ -e "${FROMWHERE%/*}"/copy2fs.flg ] || grep -qw $APPNAME "${FROMWHERE%/*}"/copy2fs.lst 2>/dev/null; then
@@ -197,7 +201,7 @@ recursive_scan_dep() {
 		}
 	}
 	BEGIN {KERNELVER="'"$KERNELVER"'"; SUPPRESS="'"$SUPPRESS"'"; IDX=0;}
-	{pi=IDX; recursive_scan($1, substr($2, 1, 1)=="/" ? $2 : ENVIRON["PWD"], $3); output(pi+1, IDX);}
+	{pi=IDX; recursive_scan($1, $2 ? $2 : ".", $3); print "@ "$1; output(pi+1, IDX);}
 	'
 }
 
@@ -210,56 +214,65 @@ echo "0" > /tmp/appserr
 [ -z "$INSTALL" ] && DOWNLOAD_ONLY=1
 [ -z "$WGET" ] && [ "$INSTALL" ] && LOAD_ONLY=1
 
+OPTIONAL="`realpath $TCEDIR`/optional"
+TARGETSLOCAL=""
+TARGETSFETCH=""
+FROMWHERE=""
+
 for TARGETAPP in $@; do
 
-APPNAME=${TARGETAPP%%.tcz}
-if [ ${TARGETAPP} == ${APPNAME} ]; then TARGETAPP=${TARGETAPP}.tcz; fi
-APPNAME="${APPNAME/-KERNEL/-${KERNELVER}}"
+TARGETAPP="${TARGETAPP%.tcz}.tcz"
 TARGETAPP="${TARGETAPP/-KERNEL.tcz/-${KERNELVER}.tcz}"
+EXTENSION="${TARGETAPP##*/}"
+APPNAME="${EXTENSION%.*}"
+
+if [ -z "$FROMWHERE" ]; then
+	if [ "$TARGETAPP" = "$EXTENSION" ] && [ ! -f "$EXTENSION" ]; then
+		FROMWHERE="$OPTIONAL"
+	else
+		FROMWHERE=`dirname "$TARGETAPP"`
+	fi
+fi
 
 # If load local or install then also check if already installed.
-# Download only OK.
 if [ "$INSTALL" ] && [ ! "$BOOTING" ]; then
-	if [ -f /usr/local/tce.installed/"${APPNAME##/*/}" ]; then
+	if [ -f "$TCEINSTALLED/$APPNAME" ]; then
 		echo "$APPNAME is already installed!"
 		continue
 	fi
 fi
 
 if [ "$WGET" ]; then
-	if app_exists "$TARGETAPP" "$TCEDIR/optional"; then
+	if app_exists "$EXTENSION" "$FROMWHERE"; then
 		echo "$APPNAME is already downloaded."
-		continue
+	else
+		mkdir -p "$FROMWHERE"
+		TARGETSFETCH="$TARGETSFETCH\n$EXTENSION"
+		[ "$DOWNLOAD_ONLY" ] && [ "$ONDEMAND" ] && ondemand "$EXTENSION"
 	fi
-	getMirror
-	[ -d "$TCEDIR"/optional ] || mkdir -p "$TCEDIR"/optional
-	EXTENSION=`basename "$TARGETAPP"`
-	FROMWHERE="$TCEDIR"/optional
-	cd "$FROMWHERE"
+else
+	TARGETSLOCAL="$TARGETSLOCAL\n$EXTENSION"
+fi
 
-	recursive_scan_dep "$EXTENSION" "$FROMWHERE" "$MIRROR" | while read F; do
+done # Finish the for-loop for multiple extensions
+
+cd "$FROMWHERE"
+
+if [ "$TARGETSFETCH" ]; then
+	getMirror
+	TARGETSFETCH="`echo -e $TARGETSFETCH | awk '/\w/ {print $1" . '"$MIRROR"'"}'`"
+	recursive_scan_dep "$TARGETSFETCH" | while read F; do
+		{ test "${F%% *}" = "@" && EXTENSION="${F#@ }" && SKIP="" || test "$SKIP"; } && continue
 		F="${F##*/}"
 		app_exists "$F" "." || fetch_app "$F"
 		[ -f "$TCEINSTALLED/${F%.*}" ] || install "$F"
 	done || exit 1 # subshell cannot exit directly
-	[ "$DOWNLOAD_ONLY" ] && [ "$ONDEMAND" ] && ondemand "$EXTENSION"
 fi
 
-# if local install then also check for .dep at the same location.
-if [ -z "$WGET" ]; then
-	if [ ! -f "$TARGETAPP" ]; then
-		if [ -f "$TCEDIR"/optional/"$TARGETAPP" ]; then
-			TARGETAPP="$TCEDIR"/optional/"$TARGETAPP"
-		else
-			echo "$TARGETAPP not found!"
-			abort_to_saved_dir
-		fi
-	fi
-	EXTENSION=`basename "$TARGETAPP"`
-	FROMWHERE=`dirname "$TARGETAPP"`
-	cd "$FROMWHERE"
-
-	recursive_scan_dep "$EXTENSION" "$FROMWHERE" | while read F; do
+if [ "$TARGETSLOCAL" ]; then
+	TARGETSLOCAL="`echo -e $TARGETSLOCAL | awk '/\w/ {print $1}'`"
+	recursive_scan_dep "$TARGETSLOCAL" | while read F; do
+		{ test "${F%% *}" = "@" && EXTENSION="${F#@ }" && SKIP="" || test "$SKIP"; } && continue
 		F="${F##*/}"
 		if [ ! -f "$TCEINSTALLED/${F%.*}" ]; then
 			if [ -f "$F" ]; then
@@ -272,9 +285,6 @@ if [ -z "$WGET" ]; then
 		fi
 	done || exit 1 # subshell cannot exit directly
 fi
-
-cd "$SAVED_DIR"
-done # Finish the for-loop for multiple extensions
 
 [ "$BOOTING" ] && exit 0
 [ $(which "$DESKTOP"_restart) ] && "$DESKTOP"_restart 2>/dev/null
