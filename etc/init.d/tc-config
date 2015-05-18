@@ -340,16 +340,26 @@ modprobe -q squashfs 2>/dev/null
 if [ -n "$NFSMOUNT" ]; then
 	SERVER=$( echo $NFSMOUNT | awk -F: '{ print $1 }')
 	DIR=$(    echo $NFSMOUNT | awk -F: '{ print $2 }')
-	OPTS=$(   echo $NFSMOUNT | awk -F: '{ print $3 }')
-	[ "$OPTS" == "no-ping" ] && NOPING=1 || NOPING=0
-	[ -z "$DHCP_RAN" ] && wait4Server $SERVER $NOPING
+	OPTS=$(   echo $NFSMOUNT | awk -F: '{ print $3 }' | tr "," " " )
+	MOUNT=mount ; MOUNT4=/usr/local/sbin/mount.nfs4
+	NOPING=0
+	set $OPTS END
+	while [ "$1" != "END" ]
+	do
+		[ "$1" == "no-ping" ] && NOPING=1
+		[ "$1" == "nfs4" ] && [ -x $MOUNT4 ] && MOUNT=$MOUNT4
+		shift
+	done
+[ -z "$DHCP_RAN" ] && wait4Server $SERVER $NOPING
 	wait $fstab_pid
 	mkdir /mnt/nfs
  	[ $SHOWAPPS ] && echo "Mounting ${SERVER}:${DIR}"
  	if [ -x /usr/local/etc/init.d/nfs-client ]; then
  		/usr/local/etc/init.d/nfs-client start
- 		if /usr/local/sbin/mount.nfs4 "${SERVER}:${DIR}" /mnt/nfs 2>/dev/null; then
- 			echo "${SERVER}:${DIR} /mnt/nfs nfs4 defaults 0 0" >>/etc/fstab
+		if $MOUNT "${SERVER}:${DIR}" /mnt/nfs 2>/dev/null; then
+		# I can find no working fstab entry for NFS4,so use the default
+		#  NFS3 for the place-holder entry.
+		echo "${SERVER}:${DIR} /mnt/nfs nfs defaults 0 0" >>/etc/fstab
  		elif mount "${SERVER}:${DIR}" /mnt/nfs 2>/dev/null; then
  			echo "${SERVER}:${DIR} /mnt/nfs nfs defaults 0 0" >>/etc/fstab
  		fi
