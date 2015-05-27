@@ -256,7 +256,7 @@ fi
 
 done # Finish the for-loop for multiple extensions
 
-cd "$FROMWHERE"
+cd "$FROMWHERE" || exit 1
 
 if [ "$TARGETSFETCH" ]; then
 	getMirror
