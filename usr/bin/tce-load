@@ -152,6 +152,8 @@ install(){
 		fi
 		[ "$BOOTING" ] && [ "$SHOWAPPS" ] && echo -n "${YELLOW}$APPNAME ${NORMAL}"
 	fi
+
+	return 0
 }
 
 recursive_scan_dep() {
