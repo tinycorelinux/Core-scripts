@@ -203,7 +203,7 @@ recursive_scan_dep() {
 		}
 	}
 	BEGIN {KERNELVER="'"$KERNELVER"'"; SUPPRESS="'"$SUPPRESS"'"; IDX=0;}
-	{pi=IDX; recursive_scan($1, $2 ? $2 : ".", $3); print "@ "$1; output(pi+1, IDX);}
+	{pi=IDX; recursive_scan($1, $2 ? $2 : ".", $3); print "@ "$1; output(pi+1, IDX); delete PRINTED;}
 	'
 }
 
