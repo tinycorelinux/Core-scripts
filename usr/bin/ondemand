@@ -103,14 +103,7 @@ if [ "$EXECITEM" ]; then
 	if [ ! -e "$INSTALLED"/"$APPNAME" ]; then
 		shift 1 && ${COMMAND} "$FROMWHERE""$APPNAME"."$TYPE" && launchApp "$APPNAME" $@
 	else
-		fullpath=`which $APPNAME`
-		if [ "$?" -eq 0 ] && `echo $fullpath | grep -qv ondemand`
-		then
-			exec $APPNAME
-		else
-			echo "Already loaded. Call from regular menu or terminal."
-			printf "\a"
-		fi
+		shift 1 && launchApp "$APPNAME" $@
 	fi
 	exit 0
 fi
@@ -121,7 +114,7 @@ fi
 [ -d "$TCEDIR"/ondemand ] || mkdir -p "$TCEDIR"/ondemand
 FILE="$TCEDIR"/ondemand/"$APPNAME"
 echo '#!/bin/sh' > "$FILE"
-echo "ondemand -e $EXTN" >> "$FILE"
+echo 'ondemand -e '"$EXTN"' "$@"' >> "$FILE"
 chmod +x "$FILE"
 
 # Optional as flwm does not need a make_ondemand.
