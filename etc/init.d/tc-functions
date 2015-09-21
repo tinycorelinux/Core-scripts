@@ -336,7 +336,7 @@ launchApp() {
 		E=`awk 'BEGIN{FS="="}/^Exec/{print $2}' "$FREEDESKTOP"/"$1".desktop`
  		E="${E% \%*}"
  		shift 1
-		exec ${E} $@
+		exec ${E} "$@"
 	else
 		fullpath=`which $1`
 		if [ "$?" -eq 0 ] && `echo $fullpath | grep -qv ondemand`

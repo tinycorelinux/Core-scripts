@@ -101,9 +101,9 @@ if [ "$EXECITEM" ]; then
 	fi
 	INSTALLED=/usr/local/tce.installed
 	if [ ! -e "$INSTALLED"/"$APPNAME" ]; then
-		shift 1 && ${COMMAND} "$FROMWHERE""$APPNAME"."$TYPE" && launchApp "$APPNAME" $@
+		shift 1 && ${COMMAND} "$FROMWHERE""$APPNAME"."$TYPE" && launchApp "$APPNAME" "$@"
 	else
-		shift 1 && launchApp "$APPNAME" $@
+		shift 1 && launchApp "$APPNAME" "$@"
 	fi
 	exit 0
 fi
