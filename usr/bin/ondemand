@@ -4,20 +4,20 @@
 useBusybox
 
 selectList() {
-	TMPFILE=`mktemp`	
+	TMPFILE=`mktemp`
 	for F in `ls ${TCEDIR}/${DIRNAME}/*${TYPE}`; do
 		ITEM="${F##*/}"
 		ADDITEM=1
-		
+
 #		Exclude onboot items from select for on demand.
 		[ "$TYPE" == "tcz" ] && if grep -qw "$ITEM" "$TCEDIR"/"$ONBOOTNAME"; then ADDITEM=0; fi
-		
+
 #		Exclude current ondemand items from select
 		[ -e "$TCEDIR"/ondemand/"$ITEM" ] && ADDITEM=0
-		
+
 		[ "$ADDITEM" == "1" ] &&  echo "$ITEM" >> "$TMPFILE"
 	done
-	
+
 	sort -f "$TMPFILE"
 	rm -f "$TMPFILE"
 }
@@ -49,7 +49,7 @@ shift `expr $OPTIND - 1`
 
 ONBOOTNAME="$(getbootparam lst 2>/dev/null)"
 if [ -z "$ONBOOTNAME" ]; then
-	[ "$TYPE" == "tcz" ] && ONBOOTNAME="onboot.lst" 
+	[ "$TYPE" == "tcz" ] && ONBOOTNAME="onboot.lst"
 fi
 
 [ "$TYPE" == "tcz" ] && DIRNAME="optional"
@@ -71,7 +71,7 @@ if [ "$REMOVEITEM" ]; then
 	[ -z "$1" ] && exit 1
 	TYPE="${1##*.}"
 	[ "$TYPE" == "tcz" ] && APPNAME="${1%.tcz}" || APPNAME="$1"
-	
+
 	TARGET="$TCEDIR"/ondemand/"$APPNAME"
 	if [ -e "$TARGET" ]; then
 		rm -f  "$TARGET"
@@ -103,7 +103,8 @@ if [ "$EXECITEM" ]; then
 	if [ ! -e "$INSTALLED"/"$APPNAME" ]; then
 		shift 1 && ${COMMAND} "$FROMWHERE""$APPNAME"."$TYPE" && launchApp "$APPNAME" $@
 	else
-		if [ "$(which $APPNAME)" ]
+		fullpath=`which $APPNAME`
+		if [ "$?" -eq 0 ] && `echo $fullpath | grep -qv ondemand`
 		then
 			exec $APPNAME
 		else
