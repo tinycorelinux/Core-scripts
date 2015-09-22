@@ -341,7 +341,9 @@ launchApp() {
 		fullpath=`which $1`
 		if [ "$?" -eq 0 ] && `echo $fullpath | grep -qv ondemand`
 		then
-			exec $1
+			E=$1
+			shift 1
+			exec $E "$@"
 		else
 			echo "Already loaded. Call from regular menu or terminal."
 			printf "\a"
