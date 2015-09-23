@@ -172,4 +172,6 @@ if [ -s /tmp/setup.lst ]; then
 	rm -f /tmp/setup.lst
 fi
 
+[ -d /mnt/test ] && rmdir /mnt/test
+
 setupHome
