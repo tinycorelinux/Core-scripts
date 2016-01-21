@@ -74,7 +74,7 @@ process_gz() {
 		STARTSCRIPT="$TCEINSTALLED"/"${GZ%.gz}"
 		[ -s "$STARTSCRIPT" ] && sh "$STARTSCRIPT"
 	done
-	cd -
+	cd - > /dev/null
 	setupHome
 }
 
