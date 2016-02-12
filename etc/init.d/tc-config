@@ -176,9 +176,9 @@ if [ -n "$NORTC" ]; then
 else
 	while [ ! -e /dev/rtc0 ]; do usleep 50000; done
 	if [ -n "$NOUTC" ]; then
-		hwclock -l -s &
+		/sbin/hwclock -l -s &
 	else
-		hwclock -u -s &
+		/sbin/hwclock -u -s &
 	fi
 fi
 
