@@ -154,7 +154,7 @@ else
 fi
 
 if [ -n "$SYSLOG" ]; then
-	 [ -z "$RSYSLOG" ] || SOPTS=" -L -R $RSYSLOG "
+	 [ -z "$RSYSLOG" ] || SOPTS=" -R $RSYSLOG -L "
 	 /sbin/syslogd ${SOPTS} && echo "${GREEN}syslog started.${NORMAL}"
 	 /sbin/klogd && echo "${GREEN}klog started."
 fi
