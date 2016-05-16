@@ -153,12 +153,6 @@ else
 	/sbin/udevadm control --reload-rules &
 fi
 
-if [ -n "$SYSLOG" ]; then
-	 [ -z "$RSYSLOG" ] || SOPTS=" -R $RSYSLOG -L "
-	 /sbin/syslogd ${SOPTS} && echo "${GREEN}syslog started.${NORMAL}"
-	 /sbin/klogd && echo "${GREEN}klog started."
-fi
-
 [ -n "$LANGUAGE" ] || LANGUAGE="C"
 echo -n "${GREEN}Setting Language to ${MAGENTA}$LANGUAGE"
 echo "LANG=$LANGUAGE" > /etc/sysconfig/language
@@ -186,6 +180,12 @@ if [ -n "$HOST" ]; then
 	sethostname
 else
 	/bin/hostname -F /etc/hostname
+fi
+
+if [ -n "$SYSLOG" ]; then
+	 [ -z "$RSYSLOG" ] || SOPTS=" -R $RSYSLOG -L "
+	 /sbin/syslogd ${SOPTS} && echo "${GREEN}syslog started.${NORMAL}"
+	 /sbin/klogd && echo "${GREEN}klog started."
 fi
 
 /sbin/ifconfig lo 127.0.0.1 up
