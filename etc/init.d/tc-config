@@ -25,7 +25,6 @@ addUser(){
 
 # Main
 
-clear                               
 echo "${GREEN}Booting ${YELLOW}Core $VERSION ${NORMAL}"
 echo "${GREEN}Running Linux Kernel ${YELLOW}$KERNEL${GREEN}.${NORMAL}"
 export PATH=/usr/local/sbin:/usr/local/bin:"$PATH"

@@ -11,5 +11,7 @@
 # Mount system devices from /etc/fstab.
 /bin/mount -a
 
+clear
+
 /etc/init.d/tc-config
 
