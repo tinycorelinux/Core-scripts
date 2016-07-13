@@ -117,8 +117,7 @@ echo "${GREEN} Done.${NORMAL}"
 		while [ $timeout -gt 0 ]; do
 			echo -en "${BLUE}\rWaiting as requested... ${NORMAL}$(($timeout / 4)) "
 			timeout=$(($timeout - 1))
-			sleep 0.25
-			blkid -lt $dev >/dev/null && timeout=0
+			blkid -lt $dev >/dev/null && timeout=0 || sleep 0.25
 		done
 		echo
 		;;
