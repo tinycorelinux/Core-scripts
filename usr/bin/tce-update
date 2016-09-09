@@ -262,8 +262,6 @@ else
 fi
 
 cd /tmp
-ERRLIST="tce-update-err.lst"
-> "$ERRLIST"
 
 if [ -d "$UPGRADE_DIR"/optional ]; then
 	UPGRADE_DIR="$UPGRADE_DIR"/optional
