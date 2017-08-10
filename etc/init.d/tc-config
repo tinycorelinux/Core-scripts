@@ -222,7 +222,11 @@ fi
 
 # dhcp.sh runs udhcpc async, so it exits before network is up
 wait4Server() {
-	/etc/init.d/dhcp.sh
+	if [ -n "$NODHCP" -a "$(type -t static_ip)" == "static_ip" ]; then
+		static_ip
+	else
+		/etc/init.d/dhcp.sh
+	fi
 	SERVER=$1 ; NOPING=$2 ; CNT=0
 	if [ "$NOPING" == "1" ] ; then
 		until ifconfig | grep -q Bcast
