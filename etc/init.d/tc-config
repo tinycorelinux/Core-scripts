@@ -16,7 +16,7 @@ KERNEL="$(uname -r)"
 
 addUser(){
 	echo "${GREEN}Adding user ${YELLOW}$USER ${NORMAL}"
-	/bin/adduser -s /bin/sh -G staff -D "$USER"
+	/usr/sbin/adduser -s /bin/sh -G staff -D "$USER"
 	echo "$USER":tcuser | /usr/sbin/chpasswd -m
 	echo -e "$USER\tALL=NOPASSWD: ALL" >> /etc/sudoers
 }
