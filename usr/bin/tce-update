@@ -81,7 +81,9 @@ upgrade(){
 
 check_dependencies(){
 #	echo "${BLUE}Checking dependencies:${NORMAL}"
-	for F in `ls "$UPGRADE_DIR"/*.dep 2> /dev/null`; do
+	DEPS="$(/bin/busybox find "$UPGRADE_DIR" -regex '.*\.tcz\.dep$' | sort)"
+	[ -f  $TCEDIR/tcz-black.lst ] && DEPS=$(echo $DEPS | grep -v -f $TCEDIR/tcz-black.lst)
+	for F in $DEPS; do
 		for TARGET in `cat "$F"`; do
 			if [ ! -f "$UPGRADE_DIR"/"$TARGET" ] && [ ! -f "$UPGRADE_DIR"/upgrade/"$TARGET" ]; then
 				REPO=`grep -w "$TARGET" md5.db`
@@ -164,7 +166,9 @@ process_dir(){
 		echo "$UPGRADE_DIR${NORMAL}"
 		[ "$QUERY" ] && echo "${BLUE}The following extensions need to be updated!${NORMAL}"
 	fi
-	for F in `ls "$UPGRADE_DIR"/*.md5.txt 2>/dev/null | grep -E .tcz.md5.txt$`; do
+	FILES="$(/bin/busybox find "$UPGRADE_DIR" -regex '.*\.tcz\.md5\.txt$' | sort)"
+	[ -f  $TCEDIR/tcz-black.lst ] && FILES="$(echo "$FILES" | grep -v -f $TCEDIR/tcz-black.lst)"
+	for F in $FILES; do
 		if [ "$LIST" ]; then
 			chkMd5Only
 		else
