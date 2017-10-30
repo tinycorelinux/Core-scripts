@@ -22,7 +22,7 @@ KERNEL=="mem|kmem|port|nvram",	GROUP="staff", MODE="0640"
 # input
 SUBSYSTEM=="input", ENV{ID_INPUT}=="", IMPORT{builtin}="input_id"
 KERNEL=="mouse*|mice|event*",	MODE="0640"
-KERNEL=="ts[0-9]*|uinput",	MODE="0640"
+KERNEL=="ts[0-9]*|uinput",	MODE="0644",	GROUP="staff"
 KERNEL=="js[0-9]*",		MODE="0644"
 
 # video4linux
