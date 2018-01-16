@@ -2,6 +2,9 @@
 
 for file in "$@"; do
   case $file in
+  --version) echo "ldd (GNU libc)" $(ls /lib/libc-*.so | sed -e 's/^.*-//' -e 's/\.so//')
+	break
+	;;
   */*) true
 	;;
   *) file=./$file
