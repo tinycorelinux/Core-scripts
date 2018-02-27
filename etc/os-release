@@ -1,8 +1,8 @@
 NAME=TinyCore
-VERSION="9.0rc1"
+VERSION="9.0"
 ID=tinycore
-VERSION_ID=9.0rc1
-PRETTY_NAME="TinyCoreLinux 9.0rc1"
+VERSION_ID=9.0
+PRETTY_NAME="TinyCoreLinux 9.0"
 ANSI_COLOR="0;34"
 CPE_NAME="cpe:/o:tinycore:tinycore_linux:9.0"
 HOME_URL="http://tinycorelinux.net/"
