@@ -340,35 +340,48 @@ modprobe -q squashfs 2>/dev/null
 [ -n "$HTTPLIST" ] && get_app "HTTP" $HTTPLIST
 
 if [ -n "$NFSMOUNT" ]; then
+	NFSPTH="/mnt/nfs"
 	SERVER=$( echo $NFSMOUNT | awk -F: '{ print $1 }')
 	DIR=$(    echo $NFSMOUNT | awk -F: '{ print $2 }')
 	OPTS=$(   echo $NFSMOUNT | awk -F: '{ print $3 }' | tr "," " " )
-	MOUNT=mount ; MOUNT4=/usr/local/sbin/mount.nfs4
-	NOPING=0
+	MOUNT=mount; MOUNT4=/usr/local/sbin/mount.nfs4; NOPING=0
+	echo "${RED}Mounting NFS Server ${YELLOW}${SERVER}:${DIR}${NORMAL}"
 	set $OPTS END
 	while [ "$1" != "END" ]
 	do
-		[ "$1" == "no-ping" ] && NOPING=1
-		[ "$1" == "nfs4" ] && [ -x $MOUNT4 ] && MOUNT=$MOUNT4
+		case $1 in
+			no-ping) NOPING=1 ;;
+			nfs4)	[ -x $MOUNT4 ] && MOUNT=$MOUNT4 ;;
+			*)	MYOPTS="${MYOPTS} $1" ;;
+		esac
 		shift
 	done
-[ -z "$DHCP_RAN" ] && wait4Server $SERVER $NOPING
+	MYOPTS=$(echo $MYOPTS) # Remove pre/trailing space(s)
+	MYOPTS=${MYOPTS// /,}  # Replace SPACE with COMMA
+	[ -z "$DHCP_RAN" ] && wait4Server $SERVER $NOPING
 	wait $fstab_pid
-	mkdir /mnt/nfs
- 	[ $SHOWAPPS ] && echo "Mounting ${SERVER}:${DIR}"
- 	if [ -x /usr/local/etc/init.d/nfs-client ]; then
- 		/usr/local/etc/init.d/nfs-client start
-		if $MOUNT "${SERVER}:${DIR}" /mnt/nfs 2>/dev/null; then
-		# I can find no working fstab entry for NFS4,so use the default
-		#  NFS3 for the place-holder entry.
-		echo "${SERVER}:${DIR} /mnt/nfs nfs defaults 0 0" >>/etc/fstab
- 		elif mount "${SERVER}:${DIR}" /mnt/nfs 2>/dev/null; then
- 			echo "${SERVER}:${DIR} /mnt/nfs nfs defaults 0 0" >>/etc/fstab
- 		fi
- 	elif mount -o nolock "${SERVER}:${DIR}" /mnt/nfs 2>/dev/null; then
- 		echo "${SERVER}:${DIR} /mnt/nfs nfs defaults,nolock 0 0" >>/etc/fstab
- 	else echo "${RED}Mounting ${SERVER}:${DIR} failed${NORMAL}"
- 	fi
+	if [ -d $NFSPTH ]; then umount $NFSPTH >/dev/null 2>&1; fi
+	mkdir -p $NFSPTH
+	if [ -x /usr/local/etc/init.d/nfs-client ]; then
+		echo "  --> nfs-utils detected"
+		/usr/local/etc/init.d/nfs-client start
+		OP=""; if [ ! "${MYOPTS}" == "" ]; then OP="-o $MYOPTS"; fi
+		if $MOUNT "${SERVER}:${DIR}" $OP $NFSPTH 2>/dev/null; then
+			FSOP=""; if [ ! "${MYOPTS}" == "" ]; then FSOP=",${MYOPTS}"; fi
+			echo "${SERVER}:${DIR} $NFSPTH nfs defaults${FSOP} 0 0" >>/etc/fstab
+		elif mount "${SERVER}:${DIR}" $OP $NFSPTH 2>/dev/null; then
+			FSOP=""; if [ ! "${MYOPTS}" == "" ]; then FSOP=",${MYOPTS}"; fi
+			echo "${SERVER}:${DIR} $NFSPTH nfs defaults${FSOP} 0 0" >>/etc/fstab
+		fi
+	elif
+		OP="-o nolock"; if [ ! "${MYOPTS}" == "" ]; then OP="-o $MYOPTS"; fi
+		echo "  --> mounting bb-mount with $OP"
+		mount $OP "${SERVER}:${DIR}" $NFSPTH 2>/dev/null; then
+		FSOP="nolock"; if [ ! "${MYOPTS}" == "" ]; then FSOP=",${MYOPTS}"; fi
+		echo "${SERVER}:${DIR} $NFSPTH nfs defaults,${FSOP} 0 0" >>/etc/fstab
+	else
+		echo "${RED}Mounting ${SERVER}:${DIR} failed${NORMAL}"
+	fi
 fi
 
 touch /var/tmp/k5_skip
