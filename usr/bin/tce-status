@@ -31,7 +31,7 @@ orphaned() {
 	if [ "$MIRROR_TYPE" == "http" ]; then
 		for E in `ls "$TCEDIR"/optional/*.tcz* 2>/dev/null`; do
 			E="${E##*/}"
-			busybox wget -sq "$MIRROR"/"$E" 2>/dev/null || echo "$E not found!"
+			busybox wget --spider -q "$MIRROR"/"$E" 2>/dev/null || echo "$E not found!"
 		done
 	else
 		echo "ftp mirrors currently do not support orphan file checking."
