@@ -6,7 +6,7 @@ case "${1}" in
                    [ "$USER" ] || USER="$(cat /etc/sysconfig/tcuser)" || USER="tc"
                    HOME=/home/"$USER"
                 fi
-		/sbin/udpsvd -E 0 69 tftpd $HOME &
+		/usr/bin/udpsvd -E 0 69 tftpd $HOME &
 		;;
 
 	stop)
