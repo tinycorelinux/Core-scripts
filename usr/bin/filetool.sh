@@ -170,7 +170,7 @@ if [ "$BACKUP" ] ; then
     sudo /bin/tar -C / -T /opt/.filetool.lst -X /opt/.xfiletool.lst  -czvf $MOUNTPOINT/"$FULLPATH"/${MYDATA}.tgz
     [ "$PROMPT" ] && echo -n "Press enter to continue:" &&  read ans
   else
-    echo -n "Backing up files to $MOUNTPOINT/$FULLPATH/${MYDATA}.tgz"
+    echo -n "Backing up files to $MOUNTPOINT/$FULLPATH/${MYDATA}.tgz "
     [ -f /tmp/backup_status ] && sudo /bin/rm -f /tmp/backup_status
     sudo /bin/tar -C / -T /opt/.filetool.lst -X /opt/.xfiletool.lst  -czf "$MOUNTPOINT/"$FULLPATH"/${MYDATA}.tgz"  2>/tmp/backup_status &
     rotdash $!
@@ -183,7 +183,7 @@ if [ "$BACKUP" ] ; then
      echo -n "encrypting .. "
      blowfish_encrypt ${MYDATA}.tgz
   fi
-  echo -e "\nDone."
+  echo -e " \nDone."
   clean_up 0
 fi
 
