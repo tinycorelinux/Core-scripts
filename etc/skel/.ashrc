@@ -23,5 +23,4 @@ alias cp='cp -i'
 alias mv='mv -i'
 alias rm='rm -i'
 
-alias d='dmenu_run &'
 alias ce='cd /etc/sysconfig/tcedir'
