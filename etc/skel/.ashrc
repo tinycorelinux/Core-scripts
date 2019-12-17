@@ -1,0 +1,27 @@
+# ~/.ashrc: Executed by SHells.
+#
+. /etc/init.d/tc-functions
+if [ -n "$DISPLAY" ]
+then
+	`which editor >/dev/null` && EDITOR=editor || EDITOR=vi
+else
+	EDITOR=vi
+fi
+export EDITOR
+
+# Alias definitions.
+#
+alias df='df -h'
+alias du='du -h'
+
+alias ls='ls -p'
+alias ll='ls -l'
+alias la='ls -la'
+
+# Avoid errors... use -f to skip confirmation.
+alias cp='cp -i'
+alias mv='mv -i'
+alias rm='rm -i'
+
+alias d='dmenu_run &'
+alias ce='cd /etc/sysconfig/tcedir'
