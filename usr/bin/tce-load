@@ -81,7 +81,7 @@ fetch_app() {
 
 copyInstall() {
 	[ -d /mnt/test ] || sudo /bin/mkdir -p /mnt/test
-	sudo /bin/mount $1 /mnt/test -t squashfs -o loop,ro,bs=4096
+	sudo /bin/mount $1 /mnt/test -t squashfs -o loop,ro
 	if [ "$?" == 0 ]; then
 		if [ "$(ls -A /mnt/test)" ]; then
 			yes "$FORCE" | sudo /bin/cp -ai /mnt/test/. / 2>/dev/null
@@ -135,7 +135,7 @@ install(){
 		else
 			[ -d /tmp/tcloop/"$APPNAME" ] || sudo /bin/mkdir -p /tmp/tcloop/"$APPNAME"
 			awk -v appname="/tmp/tcloop/$APPNAME" ' { if ( $2 == appname )  exit 1 }' /etc/mtab
-			[ "$?" == 1 ] || sudo /bin/mount "$THISAPP" /tmp/tcloop/"$APPNAME" -t squashfs -o loop,ro,bs=4096 2>&1
+			[ "$?" == 1 ] || sudo /bin/mount "$THISAPP" /tmp/tcloop/"$APPNAME" -t squashfs -o loop,ro 2>&1
 			[ "$?" == 0 ] || abort_to_saved_dir
 			[ "`find /tmp/tcloop/${APPNAME} -mindepth 1 -maxdepth 2 | wc -l`" -le 1 ] && EMPTYEXT=1
 
