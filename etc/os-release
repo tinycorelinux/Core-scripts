@@ -1,10 +1,10 @@
 NAME=TinyCore
-VERSION="10.0"
+VERSION="11.0"
 ID=tinycore
-VERSION_ID=10.0
-PRETTY_NAME="TinyCoreLinux 10.0"
+VERSION_ID=11.0
+PRETTY_NAME="TinyCoreLinux 11.0"
 ANSI_COLOR="0;34"
-CPE_NAME="cpe:/o:tinycore:tinycore_linux:10.0"
+CPE_NAME="cpe:/o:tinycore:tinycore_linux:11.0"
 HOME_URL="http://tinycorelinux.net/"
 SUPPORT_URL="http://forum.tinycorelinux.net/"
 BUG_REPORT_URL="http://forum.tinycorelinux.net/"
