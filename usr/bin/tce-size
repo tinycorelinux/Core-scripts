@@ -11,6 +11,15 @@
 . /etc/init.d/tc-functions
 useBusybox
 
+K=1024
+M=$(($K * $K))
+
+Fixed3Div()
+{
+	# divide $1 by $2. Return result to 3 decimal places, no rounding.
+	printf "%d.%03d\n" $(($1 / $2)) $(((($1 % $2) * 1000) / $2))
+}
+
 get_dependencies()
 {
 
@@ -18,7 +27,7 @@ for F in `sed 's/ //g' "$app".tree | sort -f | uniq`; do
       size=`grep -w "^$F" sizelist  | awk '{print $2}'`
       case $size in
       [0-9]*)
-	 sizemb=`dc $size 1024 / 1024 / p`
+	 sizemb=`Fixed3Div $size $M`
 	 if [ -f "$localtce"/optional/"$F" ]; then
 		 totalsize_installed=$(($totalsize_installed + $size))
 		 echo -n "  "
@@ -67,9 +76,9 @@ if [ -n "$app" ]; then
    get_dependencies $app
 
    totalsize=$(($totalsize_needed + $totalsize_installed))
-   totalsizemb=`dc $totalsize 1024 / 1024 / p`
-   totalsize_neededmb=`dc $totalsize_needed 1024 / 1024 / p`
-   totalsize_installedmb=`dc $totalsize_installed 1024 / 1024 / p`
+   totalsizemb=`Fixed3Div $totalsize $M`
+   totalsize_neededmb=`Fixed3Div $totalsize_needed $M`
+   totalsize_installedmb=`Fixed3Div $totalsize_installed $M`
 
    printf "\n  %-40s %10d, %6.2f MB\n" "Total size (bytes)" $totalsize $totalsizemb
    printf "+ %-40s %10d, %6.2f MB\n" "Indicates need to download" $totalsize_needed $totalsize_neededmb
