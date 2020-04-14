@@ -81,7 +81,6 @@ for i in `cat /proc/cmdline`; do
 				cron) CRON=1 ;;
 				xsetup) XSETUP=1 ;;
 				laptop) LAPTOP=1 ;;
-				base) ONLYBASE=1 ;;
 				showapps) SHOWAPPS=1 ;;
 				norestore) NORESTORE=1 ;;
 				noautologin) NOAUTOLOGIN=1 ;;
