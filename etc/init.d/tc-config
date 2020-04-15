@@ -130,9 +130,6 @@ modprobe loop 2>/dev/null
 if [ -n "$NOZSWAP" ]; then
 	echo "${BLUE}Skipping compressed swap in ram as requested from the boot command line.${NORMAL}"
 else
-	modprobe -q zram
-	modprobe -q zcache
-
 	while [ ! -e /dev/zram0 ]; do usleep 50000; done
 	grep MemFree /proc/meminfo | awk '{print $2/4 "K"}' > /sys/block/zram0/disksize
 
