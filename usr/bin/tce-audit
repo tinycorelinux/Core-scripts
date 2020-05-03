@@ -207,7 +207,7 @@ audit() {
 	{
 		if ($1 == target) {
 			for ( i = 2; i <= NF; i++ ) {
-				result = system("grep -w "$i" "list" >/dev/null 2>&1")
+				result = system("grep -w ^"$i"$ "list" >/dev/null 2>&1")
 				if (result == 1)
 					print "For " target " " $i" is missing!" >> results
 			}
