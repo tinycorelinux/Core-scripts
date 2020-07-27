@@ -1,0 +1,195 @@
+#!/usr/bin/micropython
+
+import os
+import sys
+import utime
+
+import tc
+
+def waitforfinish():
+    while len(os.listdir('/var/run/tcebootload')) != 0:
+        pass
+
+
+def mklog(s):
+    global tm
+    
+    t = utime.time()
+    
+    fp = open('/tmp/bootlog.txt', 'at')
+    fp.write("%6.1f - %s\n" % (t - tm, s))
+    fp.close()
+
+    tm = t
+    
+root = ''
+
+tczout = []
+stlst = []
+tczin = []
+
+
+showapps = 'showapps' in tc.cmdline
+
+tm = utime.time()
+
+for p in sys.argv[2:]:
+    s = p.replace('KERNEL', tc.kernel)
+
+    if (s in tczin) == False:
+        tczin.append(s)
+    
+nr = len(tczin)
+
+while len(tczin) > 0:
+    try:
+        for p in tc.readtczlist(sys.argv[1] + '/optional/' + tczin[0] + '.dep'):
+            try:
+                tczout.index(p)
+                continue
+            except ValueError:
+                pass
+                
+            try:
+                tczin.index(p)
+                continue
+            except ValueError:
+                pass
+                
+            tczin.append(p)
+                
+    except OSError:
+        pass
+
+    tczout.append(tczin[0])        
+    del tczin[0]
+
+t1 = utime.time()
+
+mklog('Build TCZ list')
+
+tczspl = []
+
+for i in range(0, tc.cpunr):
+    tczspl.append('')
+    
+i = 0
+
+for p in tczout:
+    tczspl[i] += p + ' '
+    i += 1
+    
+    if i >= tc.cpunr:
+        i = 0
+
+# Mount extensions
+
+if showapps:
+    print()
+    print("Mounting extensions")
+    print("-------------------")
+    print()
+    
+for p in tczout:
+
+    try:
+        if showapps:
+            print(p[:-4] + ' ', end="", flush=True)
+            print('\033[1;33m', end="", flush=True)
+
+        fp = open(sys.argv[1] + '/optional/' + p, 'r')
+        fp.close()
+        os.mkdir(root + '/tmp/tcloop/' + p[:-4])          
+        os.system('sudo /usr/bin/mount -t squashfs -o loop ' + sys.argv[1] + '/optional/' + p + ' ' + root + '/tmp/tcloop/' + p[:-4])
+    except OSError:
+        print("\nNot available 1:", p)
+        continue
+        
+
+waitforfinish()
+
+mklog('Mount TCZ (%d)' % (len(tczout)))
+
+try:
+    fp = open(sys.argv[1] + '/copy2fs.flg', 'r')
+    fp.close()
+    copy2fsflg = True
+except OSError:
+    copy2fsflg = False
+
+# Add extensions to file system
+
+if showapps:
+    print()
+    print()
+    print("Adding extensions to file system")
+    print("--------------------------------")
+    print()
+
+for p in tczout:
+    try:
+        fp = open(sys.argv[1] + '/optional/' + p, 'r')
+        fp.close()
+    except OSError:
+        print("\nNot available 2:", p)
+        continue
+
+    if showapps:
+        print(p[:-4] + ' ', end="", flush=True)
+        
+    if copy2fsflg:
+        os.system('sudo busybox cp -r ' + root + '/tmp/tcloop/' + p[:-4] + '/* /')
+        os.system('sudo busybox.suid umount ' + root + '/tmp/tcloop/' + p[:-4])
+        os.system('sudo busybox.suid rm -r -f ' + root + '/tmp/tcloop/' + p[:-4])    
+    else:
+        os.system('sudo busybox cp -r -s ' + root + '/tmp/tcloop/' + p[:-4] + '/* ' + root + '/')
+    
+    try:
+        fp = open(root + '/usr/local/tce.installed/' + p[:-4], 'r')
+        fp.close()
+        stlst.append(p[:-4])
+    
+    except OSError:
+        fp = open(root + '/usr/local/tce.installed/' + p[:-4], 'wb')
+        fp.close()
+
+waitforfinish()
+
+mklog('Add to file system')
+
+st = os.system('sudo /sbin/ldconfig')
+
+st = os.system('sudo /sbin/depmod -b /')
+
+# Executing startup scripts
+
+if showapps:
+    print()
+    print()
+    print("Executing startup scripts")
+    print("-------------------------")
+    print()
+
+for p in stlst:
+    if showapps:
+        print(p + ' ', end="", flush=True)
+
+    os.system('sudo /usr/local/tce.installed/' + p)
+
+mklog('Execute startup scripts')
+
+os.system('sudo /sbin/udevadm trigger')
+
+mklog('udev trigger')
+
+# ANSI COLORS
+#CRE="$(echo -e '\r\033[K')"
+#RED="$(echo -e '\033[1;31m')"
+#GREEN="$(echo -e '\033[1;32m')"
+#YELLOW="$(echo -e '\033[1;33m')"
+#BLUE="$(echo -e '\033[1;34m')"
+#MAGENTA="$(echo -e '\033[1;35m')"
+#CYAN="$(echo -e '\033[1;36m')"
+#WHITE="$(echo -e '\033[1;37m')"
+#NORMAL="$(echo -e '\033[0;39m')"
+
