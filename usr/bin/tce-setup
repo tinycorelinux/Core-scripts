@@ -80,7 +80,12 @@ process_gz() {
 
 process() {
 	[ -f "$1" ] && applist=$(awk -v ORS=" " '{gsub(/#.*/, ""); if ($1~/\w/) print $1;}' "$1")
-	[ "$applist" ] && su "$USER" -c "tce-load -i -b -t `dirname $1` $applist"
+	TMPTMP=$PATH
+	export PATH="/usr/sbin:/usr/bin:/sbin:/bin:/usr/local/sbin:/usr/local/bin"
+	[ "$applist" ] && su "$USER" -c "/usr/bin/micropython /usr/bin/tce-bootload `dirname $1` $applist"
+	export PATH=$TMPTMP
+	chown root.staff $TCEINSTALLED
+	chmod 775 $TCEINSTALLED
 	if [ -s /tmp/aberr ]; then
 		echo "occured while loading:  $applist" >> /tmp/aberr
 		exit 1

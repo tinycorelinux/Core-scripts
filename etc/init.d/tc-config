@@ -29,6 +29,8 @@ echo "${GREEN}Booting ${YELLOW}Core $VERSION ${NORMAL}"
 echo "${GREEN}Running Linux Kernel ${YELLOW}$KERNEL${GREEN}.${NORMAL}"
 export PATH=/usr/local/sbin:/usr/local/bin:"$PATH"
 
+echo -n performance > /sys/devices/system/cpu/cpu0/cpufreq/scaling_governor
+
 # Here we check all the boot parameters using the fastest way known to men, case & loop
 echo -n "${BLUE}Checking boot options...${NORMAL}"
 for i in `cat /proc/cmdline`; do
@@ -130,6 +132,8 @@ modprobe loop 2>/dev/null
 if [ -n "$NOZSWAP" ]; then
 	echo "${BLUE}Skipping compressed swap in ram as requested from the boot command line.${NORMAL}"
 else
+	modprobe -q zram
+
 	while [ ! -e /dev/zram0 ]; do usleep 50000; done
 	grep MemFree /proc/meminfo | awk '{print $2/4 "K"}' > /sys/block/zram0/disksize
 
