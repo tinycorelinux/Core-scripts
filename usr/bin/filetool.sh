@@ -7,6 +7,16 @@
 # Added comparerestore and dry run (Brian Smith)
 . /etc/init.d/tc-functions
 useBusybox
+
+K=1024
+M=$(($K * $K))
+
+Fixed3Div()
+{
+	# divide $1 by $2. Return result to 3 decimal places, no rounding.
+	printf "%d.%03d\n" $(($1 / $2)) $(((($1 % $2) * 1000) / $2))
+}
+
 CMDLINE="$(cat /proc/cmdline)"
 
 MYDATA=mydata
@@ -96,13 +106,13 @@ if [ $DRYRUN ]; then
     if [ -f "/${entry}" ]; then
       size=`sudo /bin/ls -al "/${entry}" | awk '{print $5}'`
       totalsize=$(($totalsize + $size))
-      sizemb=`dc $size 1024 / 1024 / p`
+      sizemb=`Fixed3Div $size $M`
       printf "%6.2f MB  /%s\n" $sizemb "$entry"
     fi
   done < /tmp/backup_dryrun_list
   rm /tmp/backup_dryrun_list
-  totalsizemb=`dc $totalsize 1024 / 1024 / p`
-  totalcompressedsizemb=`dc $totalcompressedsize 1024 / 1024 / p`
+  totalsizemb=`Fixed3Div $totalsize $M`
+  totalcompressedsizemb=`Fixed3Div $totalcompressedsize $M`
   printf "\nTotal backup size (uncompressed):  %6.2f MB (%d bytes)\n" $totalsizemb $totalsize
   printf "Total backup size (compressed)  :  %6.2f MB (%d bytes)\n\n" $totalcompressedsizemb $totalcompressedsize
   exit 0
