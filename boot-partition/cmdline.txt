@@ -1,0 +1,1 @@
+zswap.compressor=lz4 zswap.zpool=z3fold console=tty1 root=/dev/ram0 elevator=deadline rootwait quiet nortc loglevel=3 noembed
