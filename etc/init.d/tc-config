@@ -83,6 +83,7 @@ for i in `cat /proc/cmdline`; do
 				cron) CRON=1 ;;
 				xsetup) XSETUP=1 ;;
 				laptop) LAPTOP=1 ;;
+				base) ONLYBASE=1 ;;
 				showapps) SHOWAPPS=1 ;;
 				norestore) NORESTORE=1 ;;
 				noautologin) NOAUTOLOGIN=1 ;;
@@ -108,6 +109,8 @@ echo -n "${BLUE}Starting udev daemon for hotplug support...${NORMAL}"
 /sbin/udevd --daemon 2>&1 >/dev/null
 #/sbin/udevadm trigger --action=add 2>/dev/null >/dev/null &
 /sbin/udevadm trigger --action=add 2>&1 >/dev/null &
+/sbin/udevadm settle
+
 rotdash $!
 echo "${GREEN} Done.${NORMAL}"
 
@@ -118,7 +121,8 @@ echo "${GREEN} Done.${NORMAL}"
 		while [ $timeout -gt 0 ]; do
 			echo -en "${BLUE}\rWaiting as requested... ${NORMAL}$(($timeout / 4)) "
 			timeout=$(($timeout - 1))
-			blkid -lt $dev >/dev/null && timeout=0 || sleep 0.25
+			sleep 0.25
+			blkid -lt $dev >/dev/null && timeout=0
 		done
 		echo
 		;;
