@@ -279,7 +279,7 @@ for p in stlst:
 		if showapps:
 			print(p + ' ', end="")
 		if os.access( script, os.X_OK) == True:
-			os.system('sudo script')
+			os.system('sudo %s' % script)
 		sys.exit(0)
 	else:
 		if forks >= maxforks:
