@@ -131,7 +131,7 @@ if [ -n "$NOZSWAP" ]; then
 	echo "${BLUE}Skipping compressed swap in ram as requested from the boot command line.${NORMAL}"
 else
 	while [ ! -e /dev/zram0 ]; do usleep 50000; done
-	grep MemFree /proc/meminfo | awk '{print $2/4 "K"}' > /sys/block/zram0/disksize
+	grep MemFree /proc/meminfo | awk '{printf("%dK\n", $2/4)}' > /sys/block/zram0/disksize
 
 	mkswap /dev/zram0 >/dev/null 2>&1
 	swapon /dev/zram0
