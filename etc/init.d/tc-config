@@ -420,7 +420,7 @@ if [ -n "$TCVD" ]; then
 	TCVD_DEVICE="${TCVD%%/*}"
 	TCVD_LOOPFILE="${TCVD#*/}"
 	if [ "$TCVD_DEVICE" == "$TCVD_LOOPFILE" ]; then
-		TCVD_DEVICE="$(autoscan $TCVD_LOOPFILE 'f')"
+		TCVD_DEVICE="$(tc_autoscan $TCVD_LOOPFILE 'f')"
 	fi   
 	PARTITION="${TCVD_DEVICE##/dev/}"
 	find_mountpoint "$PARTITION"

@@ -9,7 +9,7 @@ read USER < /etc/sysconfig/tcuser
 TCEINSTALLED="/usr/local/tce.installed"
 
 process_normal_tcedir() {
-	[ -z "$TCE" ] && TCE="$(autoscan 'tce' 'd')"/tce
+	[ -z "$TCE" ] && TCE="$(tc_autoscan 'tce' 'd')"/tce
 	if [ "$TCE" != "/tce" ]; then
 		TCE_DEVICE="${TCE%%/*}"
 		TCE_DIR="${TCE#*/}"
@@ -162,7 +162,7 @@ fi
 # If nothing loaded then also check for pseudo CD, e.g., isohybrid
 if [ "$CDE" -a -z "$CDELIST" ]; then
 	sleep 5
-	DEV="$(autoscan 'cde' 'd')"
+	DEV="$(tc_autoscan 'cde' 'd')"
 	process_CD
 fi
 
