@@ -35,7 +35,7 @@ if [ -n "$PROTECT" ]; then
 		DEVICE="$(echo $TCE|cut -f3- -d/)"
 	fi
 	if [ -z "$DEVICE" ]; then
-		DEVICE=`autoscan "$MYDATA".tgz.bfe 'f'`
+		DEVICE=`tc_autoscan "$MYDATA".tgz.bfe 'f'`
 	fi
 	if [ -n "$DEVICE" ]; then
 		/usr/bin/filetool.sh -r "$DEVICE"
@@ -52,7 +52,7 @@ if [ -z "$DEVICE" ]; then
 	if [ -n "$TCEDIR" ]; then
 		DEVICE="$TCEDIR"
 	else
-		DEVICE=`autoscan "$MYDATA".tgz 'f'`
+		DEVICE=`tc_autoscan "$MYDATA".tgz 'f'`
 	fi
 fi
 

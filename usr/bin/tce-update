@@ -230,7 +230,7 @@ echo -n "${YELLOW}Checking for Easy Mode Operation... ${NORMAL}"
 [ "$TCE" == "/tmp/tce/" ] && TCE=""
 TCE="${TCE#/mnt/}"
 # Next search for tce
-[ -z "$TCE" ] && TCE="$(autoscan 'tce' 'd')"/tce
+[ -z "$TCE" ] && TCE="$(tc_autoscan 'tce' 'd')"/tce
 TCE_DEVICE="${TCE%%/*}"
 TCE_DIR="${TCE#*/}"
 TCEDIR=/mnt/"$TCE_DEVICE"/"$TCE_DIR"
