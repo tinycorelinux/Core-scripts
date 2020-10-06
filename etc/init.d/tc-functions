@@ -106,7 +106,7 @@ find_mountpoint() {
  MOUNTPOINT="$(grep -i ^$D2\  /etc/fstab|awk '{print $2}'|head -n 1)"
 }
 
-autoscan(){
+tc_autoscan(){
 FOUND=""
 for DEVICE in `autoscan-devices`; do
    find_mountpoint $DEVICE
