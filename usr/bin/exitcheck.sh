@@ -5,9 +5,10 @@
 . /etc/init.d/tc-functions
 useBusybox
 
-[ -x /opt/shutdown.sh ] && /opt/shutdown.sh
-
 ACTION="$1"
+
+[ -x /opt/shutdown.sh ] && /opt/shutdown.sh $ACTION
+
 case "$ACTION" in
   reboot )
     sudo /sbin/reboot
