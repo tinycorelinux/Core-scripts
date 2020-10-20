@@ -476,7 +476,8 @@ if [ -n "$MYOPT" ]; then
 			;;
 			* )
 				[ -d "$MOUNTPOINT"/opt ] || mkdir "$MOUNTPOINT"/opt
-				yes n | cp -ai /opt/. "$MOUNTPOINT"/opt/ 2>/dev/null
+				yes n | cp -ai /opt/* "$MOUNTPOINT"/opt/ 2>/dev/null
+				yes n | cp -ai /opt/.[!.]* "$MOUNTPOINT"/opt/ 2>/dev/null
 				mount --bind "$MOUNTPOINT"/opt/ /opt/
 				chgrp -R staff /opt/ >/dev/null 2>&1
 				chmod -R g+w /opt/ >/dev/null 2>&1
