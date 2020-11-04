@@ -186,7 +186,7 @@ if [ "$BACKUP" ] ; then
     rotdash $!
     sync
     [ -s /tmp/backup_status ] && sed -i '/socket ignored/d' /tmp/backup_status 2>/dev/null
-    [ -s /tmp/backup_status ] && exit 1
+    [ -s /tmp/backup_status ] && { echo -e "\nThere was an issue, see /tmp/backup_status."; exit 1; }
     touch /tmp/backup_done
   fi
   if [ -f /etc/sysconfig/bfe ]; then
