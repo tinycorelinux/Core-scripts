@@ -2,20 +2,104 @@
 #
 # By bmarkus, February 16, 2014
 
+addgroup() {
+    busybox addgroup "$@"
+}
+
+adduser() {
+    busybox adduser "$@"
+}
+
+adjtimex() {
+    busybox adjtimex "$@"
+}
+
 ar() {
     busybox ar "$@"
+}
+
+arp() {
+    busybox arp "$@"
+}
+
+arping() {
+    busybox arping "$@"
+}
+
+ash() {
+    busybox ash "$@"
 }
 
 awk() {
     busybox awk "$@"
 }
 
+basename() {
+    busybox basename "$@"
+}
+
+bunzip2() {
+    busybox bunzip2 "$@"
+}
+
+bzcat() {
+    busybox bzcat "$@"
+}
+
+bzip2() {
+    busybox bzip2 "$@"
+}
+
+cal() {
+    busybox cal "$@"
+}
+
 cat() {
     busybox cat "$@"
 }
 
+chgrp() {
+    busybox chgrp "$@"
+}
+
+chmod() {
+    busybox chmod "$@"
+}
+
+chown() {
+    busybox chown "$@"
+}
+
+chpasswd() {
+    busybox chpasswd "$@"
+}
+
+chroot() {
+    busybox chroot "$@"
+}
+
+chrt() {
+    busybox chrt "$@"
+}
+
+chvt() {
+    busybox chvt "$@"
+}
+
+cksum() {
+    busybox cksum "$@"
+}
+
 clear() {
     busybox clear "$@"
+}
+
+cmp() {
+    busybox cmp "$@"
+}
+
+comm() {
+    busybox comm "$@"
 }
 
 cp() {
@@ -26,6 +110,14 @@ cpio() {
     busybox cpio "$@"
 }
 
+crond() {
+    busybox crond "$@"
+}
+
+cut() {
+    busybox cut "$@"
+}
+
 date() {
     busybox date "$@"
 }
@@ -34,28 +126,156 @@ dc() {
     busybox dc "$@"
 }
 
-df() {
-    busybox df "$@"
+dd() {
+    busybox dd "$@"
 }
 
-du() {
-    busybox du "$@"
+deallocvt() {
+    busybox deallocvt "$@"
+}
+
+delgroup() {
+    busybox delgroup "$@"
+}
+
+deluser() {
+    busybox deluser "$@"
 }
 
 depmod() {
     busybox depmod "$@"
 }
 
+df() {
+    busybox df "$@"
+}
+
+diff() {
+    busybox diff "$@"
+}
+
+dirname() {
+    busybox dirname "$@"
+}
+
+dmesg() {
+    busybox dmesg "$@"
+}
+
+dnsdomainname() {
+    busybox dnsdomainname "$@"
+}
+
+dos2unix() {
+    busybox dos2unix "$@"
+}
+
+du() {
+    busybox du "$@"
+}
+
+dumpkmap() {
+    busybox dumpkmap "$@"
+}
+
+dumpleases() {
+    busybox dumpleases "$@"
+}
+
+echo() {
+    busybox echo "$@"
+}
+
+egrep() {
+    busybox egrep "$@"
+}
+
+eject() {
+    busybox eject "$@"
+}
+
+env() {
+    busybox env "$@"
+}
+
+ether-wake() {
+    busybox ether-wake "$@"
+}
+
 expr() {
     busybox expr "$@"
+}
+
+false() {
+    busybox false "$@"
+}
+
+fbset() {
+    busybox fbset "$@"
+}
+
+fdflush() {
+    busybox fdflush "$@"
+}
+
+fdformat() {
+    busybox fdformat "$@"
 }
 
 fdisk() {
     busybox fdisk "$@"
 }
 
+fgconsole() {
+    busybox fgconsole "$@"
+}
+
+fgrep() {
+    busybox fgrep "$@"
+}
+
+find() {
+    busybox find "$@"
+}
+
+flock() {
+    busybox flock "$@"
+}
+
 fold() {
     busybox fold "$@"
+}
+
+free() {
+    busybox free "$@"
+}
+
+freeramdisk() {
+    busybox freeramdisk "$@"
+}
+
+fsck() {
+    busybox fsck "$@"
+}
+
+ftpget() {
+    busybox ftpget "$@"
+}
+
+ftpput() {
+    busybox ftpput "$@"
+}
+
+fuser() {
+    busybox fuser "$@"
+}
+
+getopt() {
+    busybox getopt "$@"
+}
+
+getty() {
+    busybox getty "$@"
 }
 
 grep() {
@@ -66,8 +286,72 @@ gunzip() {
     busybox gunzip "$@"
 }
 
+gzip() {
+    busybox gzip "$@"
+}
+
+halt() {
+    busybox halt "$@"
+}
+
+hdparm() {
+    busybox hdparm "$@"
+}
+
+head() {
+    busybox head "$@"
+}
+
+hexdump() {
+    busybox hexdump "$@"
+}
+
+hostid() {
+    busybox hostid "$@"
+}
+
 hostname() {
     busybox hostname "$@"
+}
+
+hwclock() {
+    busybox hwclock "$@"
+}
+
+id() {
+    busybox id "$@"
+}
+
+ifconfig() {
+    busybox ifconfig "$@"
+}
+
+inetd() {
+    busybox inetd "$@"
+}
+
+init() {
+    busybox init "$@"
+}
+
+insmod() {
+    busybox insmod "$@"
+}
+
+install() {
+    busybox install "$@"
+}
+
+ipcalc() {
+    busybox ipcalc "$@"
+}
+
+ipcrm() {
+    busybox ipcrm "$@"
+}
+
+ipcs() {
+    busybox ipcs "$@"
 }
 
 kill() {
@@ -78,32 +362,332 @@ killall() {
     busybox killall "$@"
 }
 
+killall5() {
+    busybox killall5 "$@"
+}
+
+klogd() {
+    busybox klogd "$@"
+}
+
+last() {
+    busybox last "$@"
+}
+
 less() {
     busybox less "$@"
+}
+
+linux32() {
+    busybox linux32 "$@"
+}
+
+linux64() {
+    busybox linux64 "$@"
+}
+
+ln() {
+    busybox ln "$@"
+}
+
+loadfont() {
+    busybox loadfont "$@"
+}
+
+loadkmap() {
+    busybox loadkmap "$@"
+}
+
+logger() {
+    busybox logger "$@"
+}
+
+logname() {
+    busybox logname "$@"
+}
+
+logread() {
+    busybox logread "$@"
+}
+
+losetup() {
+    busybox losetup "$@"
 }
 
 ls() {
     busybox ls "$@"
 }
 
+lsmod() {
+    busybox lsmod "$@"
+}
+
+lsof() {
+    busybox lsof "$@"
+}
+
+lzcat() {
+    busybox lzcat "$@"
+}
+
+lzma() {
+    busybox lzma "$@"
+}
+
 md5sum() {
     busybox md5sum "$@"
 }
 
-mount() {
-    busybox.suid mount "$@"
+mesg() {
+    busybox mesg "$@"
+}
+
+microcom() {
+    busybox microcom "$@"
+}
+
+mkdir() {
+    busybox mkdir "$@"
+}
+
+mkfifo() {
+    busybox mkfifo "$@"
+}
+
+mknod() {
+    busybox mknod "$@"
+}
+
+mkswap() {
+    busybox mkswap "$@"
+}
+
+mktemp() {
+    busybox mktemp "$@"
+}
+
+modinfo() {
+    busybox modinfo "$@"
+}
+
+modprobe() {
+    busybox modprobe "$@"
+}
+
+more() {
+    busybox more "$@"
+}
+
+mv() {
+    busybox mv "$@"
+}
+
+nameif() {
+    busybox nameif "$@"
+}
+
+nbd-client() {
+    busybox nbd-client "$@"
+}
+
+nc() {
+    busybox nc "$@"
+}
+
+netstat() {
+    busybox netstat "$@"
+}
+
+nice() {
+    busybox nice "$@"
+}
+
+nohup() {
+    busybox nohup "$@"
+}
+
+nslookup() {
+    busybox nslookup "$@"
+}
+
+ntpd() {
+    busybox ntpd "$@"
+}
+
+od() {
+    busybox od "$@"
+}
+
+openvt() {
+    busybox openvt "$@"
+}
+
+patch() {
+    busybox patch "$@"
+}
+
+pgrep() {
+    busybox pgrep "$@"
+}
+
+pidof() {
+    busybox pidof "$@"
+}
+
+pivot_root() {
+    busybox pivot_root "$@"
+}
+
+pkill() {
+    busybox pkill "$@"
+}
+
+poweroff() {
+    busybox poweroff "$@"
+}
+
+printenv() {
+    busybox printenv "$@"
+}
+
+printf() {
+    busybox printf "$@"
 }
 
 ps() {
     busybox ps "$@"
 }
 
+pstree() {
+    busybox pstree "$@"
+}
+
+pwd() {
+    busybox pwd "$@"
+}
+
+rdate() {
+    busybox rdate "$@"
+}
+
+readlink() {
+    busybox readlink "$@"
+}
+
+realpath() {
+    busybox realpath "$@"
+}
+
+reboot() {
+    busybox reboot "$@"
+}
+
+renice() {
+    busybox renice "$@"
+}
+
+reset() {
+    busybox reset "$@"
+}
+
+resize() {
+    busybox resize "$@"
+}
+
+rev() {
+    busybox rev "$@"
+}
+
+rm() {
+    busybox rm "$@"
+}
+
+rmdir() {
+    busybox rmdir "$@"
+}
+
+rmmod() {
+    busybox rmmod "$@"
+}
+
+route() {
+    busybox route "$@"
+}
+
+rpm() {
+    busybox rpm "$@"
+}
+
+rpm2cpio() {
+    busybox rpm2cpio "$@"
+}
+
+script() {
+    busybox script "$@"
+}
+
 sed() {
     busybox sed "$@"
 }
 
+seq() {
+    busybox seq "$@"
+}
+
+setarch() {
+    busybox setarch "$@"
+}
+
+setconsole() {
+    busybox setconsole "$@"
+}
+
+setkeycodes() {
+    busybox setkeycodes "$@"
+}
+
+setsid() {
+    busybox setsid "$@"
+}
+
+sh() {
+    busybox sh "$@"
+}
+
+sha1sum() {
+    busybox sha1sum "$@"
+}
+
+sleep() {
+    busybox sleep "$@"
+}
+
 sort() {
     busybox sort "$@"
+}
+
+split() {
+    busybox split "$@"
+}
+
+start-stop-daemon() {
+    busybox start-stop-daemon "$@"
+}
+
+strings() {
+    busybox strings "$@"
+}
+
+stty() {
+    busybox stty "$@"
+}
+
+sulogin() {
+    busybox sulogin "$@"
+}
+
+sum() {
+    busybox sum "$@"
 }
 
 swapoff() {
@@ -114,20 +698,144 @@ swapon() {
     busybox swapon "$@"
 }
 
+switch_root() {
+    busybox switch_root "$@"
+}
+
 sync() {
     busybox sync "$@"
+}
+
+sysctl() {
+    busybox sysctl "$@"
+}
+
+syslogd() {
+    busybox syslogd "$@"
+}
+
+tail() {
+    busybox tail "$@"
 }
 
 tar() {
     busybox tar "$@"
 }
 
+taskset() {
+    busybox taskset "$@"
+}
+
+tee() {
+    busybox tee "$@"
+}
+
+telnet() {
+    busybox telnet "$@"
+}
+
+test() {
+    busybox test "$@"
+}
+
+tftp() {
+    busybox tftp "$@"
+}
+
+tftpd() {
+    busybox tftpd "$@"
+}
+
+time() {
+    busybox time "$@"
+}
+
 timeout() {
     busybox timeout "$@"
 }
 
-umount() {
-    busybox.suid umount "$@"
+top() {
+    busybox top "$@"
+}
+
+touch() {
+    busybox touch "$@"
+}
+
+tr() {
+    busybox tr "$@"
+}
+
+true() {
+    busybox true "$@"
+}
+
+tty() {
+    busybox tty "$@"
+}
+
+udhcpc() {
+    busybox udhcpc "$@"
+}
+
+udhcpd() {
+    busybox udhcpd "$@"
+}
+
+udpsvd() {
+    busybox udpsvd "$@"
+}
+
+uname() {
+    busybox uname "$@"
+}
+
+uncompress() {
+    busybox uncompress "$@"
+}
+
+uniq() {
+    busybox uniq "$@"
+}
+
+unix2dos() {
+    busybox unix2dos "$@"
+}
+
+unlink() {
+    busybox unlink "$@"
+}
+
+unlzma() {
+    busybox unlzma "$@"
+}
+
+unxz() {
+    busybox unxz "$@"
+}
+
+unzip() {
+    busybox unzip "$@"
+}
+
+uptime() {
+    busybox uptime "$@"
+}
+
+usleep() {
+    busybox usleep "$@"
+}
+
+vconfig() {
+    busybox vconfig "$@"
+}
+
+vi() {
+    busybox vi "$@"
+}
+
+watch() {
+    busybox watch "$@"
 }
 
 wc() {
@@ -136,4 +844,80 @@ wc() {
 
 wget() {
     busybox wget "$@"
+}
+
+which() {
+    busybox which "$@"
+}
+
+who() {
+    busybox who "$@"
+}
+
+whoami() {
+    busybox whoami "$@"
+}
+
+xargs() {
+    busybox xargs "$@"
+}
+
+xz() {
+    busybox xz "$@"
+}
+
+xzcat() {
+    busybox xzcat "$@"
+}
+
+yes() {
+    busybox yes "$@"
+}
+
+zcat() {
+    busybox zcat "$@"
+}
+
+crontab() {
+    busybox.suid crontab "$@"
+}
+
+fstrim() {
+    busybox.suid fstrim "$@"
+}
+
+login() {
+    busybox.suid login "$@"
+}
+
+mount() {
+    busybox.suid mount "$@"
+}
+
+passwd() {
+    busybox.suid passwd "$@"
+}
+
+ping() {
+    busybox.suid ping "$@"
+}
+
+ping6() {
+    busybox.suid ping6 "$@"
+}
+
+su() {
+    busybox.suid su "$@"
+}
+
+traceroute() {
+    busybox.suid traceroute "$@"
+}
+
+umount() {
+    busybox.suid umount "$@"
+}
+
+vlock() {
+    busybox.suid vlock "$@"
 }
