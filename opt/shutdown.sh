@@ -2,6 +2,10 @@
 . /etc/init.d/tc-functions
 useBusybox
 # put user shutdown commands here
+# this is called from exittc, aka the gui shutdown option
+# if you shutdown from cli using shutdown/halt, this will not be called
+#
+# for custom cli shutdown commands, you should edit /etc/init.d/rc.shutdown
 
 # If no backup of home was done then loop through valid users to clean up.
 if [ ! -e /tmp/backup_done ] || ! grep -q "^home" /opt/.filetool.lst; then
