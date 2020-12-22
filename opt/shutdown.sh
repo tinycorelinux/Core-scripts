@@ -2,6 +2,10 @@
 . /etc/init.d/tc-functions
 useBusybox
 # put user shutdown commands here
+# this is called from exittc, aka the gui shutdown option
+# if you shutdown from cli using shutdown/halt, this will not be called
+#
+# for custom cli shutdown commands, you should edit /etc/init.d/rc.shutdown
 
 ACTION="$1"
 case $ACTION in
