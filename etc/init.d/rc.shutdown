@@ -5,6 +5,10 @@
 useBusybox
 
 clear 
+
+# If shutdown script exists and is executable, run it
+[ -x /opt/shutdown.sh ] && /opt/shutdown.sh
+
 # Sync all filesystems.
 echo "${BLUE}Syncing all filesystems."
 sync; sync
