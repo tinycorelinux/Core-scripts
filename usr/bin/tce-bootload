@@ -8,10 +8,6 @@ import tc
 
 maxforks = tc.cpunr
 
-def waitforfinish():
-	while len(os.listdir('/var/run/tcebootload')) != 0:
-		pass
-
 def mklog(s):
 	global tm
 
@@ -23,36 +19,38 @@ def mklog(s):
 
 	tm = t
 
-def forklog(s):
-	fp = open('/tmp/forklog.txt', 'at')
+def debuglog(s):
+	fp = open('/tmp/debugboot.log', 'at')
 	fp.write("%s\n" % s)
 	fp.close()
 
-def mount_extension(cmd,ext):
+def system_command(cmd,ext):
 	retries=4
 	while retries > 0:
 		try:
 			ret=os.system(cmd)
 			if ret != 0:
-				forklog('OS Error code %s:%d\n' % (ext, ret))
+				if debug:
+					debuglog('OS Error code %s:%d\n' % (ext, ret))
 				retries -= 1
 			else:
 				if (retries != 4):
-					forklog("Successful Retry on %s\n" % ext)
+					if debug:
+						debuglog("Successful Retry on %s\n" % ext)
 				break
 		except OSError:
 			retries -= 1
 			continue
 	if (retries == 0):
-		forklog("\nToo many retries:", ext)
+		if debug:
+			debuglog("\nToo many retries: %s\n", ext)
 
 
 root = ''
 
 tczout = []
-stlst = []
 tczin = []
-
+pid = 0
 
 showapps = 'showapps' in tc.cmdline
 debug = 'debugbootload' in tc.cmdline
@@ -65,8 +63,7 @@ for p in sys.argv[2:]:
 	if (s in tczin) == False:
 		tczin.append(s)
 
-nr = len(tczin)
-
+#Build tcz list to load, with duplicate checking
 while len(tczin) > 0:
 	try:
 		for p in tc.readtczlist(sys.argv[1] + '/optional/' + tczin[0] + '.dep'):
@@ -90,23 +87,15 @@ while len(tczin) > 0:
 	tczout.append(tczin[0])
 	del tczin[0]
 
-t1 = utime.time()
+#Make sure all extensions in list are really there.
+for p in tczout:
+   if os.access(sys.argv[1] + '/optional/' + p, os.R_OK) == False:
+		tczout.remove(p)
+		debuglog("Warning: %s Not Found. Extension was in onboot.lst or dependancies." % p)
 
 mklog('Build TCZ list')
-
-tczspl = []
-
-for i in range(0, tc.cpunr):
-	tczspl.append('')
-
-i = 0
-
-for p in tczout:
-	tczspl[i] += p + ' '
-	i += 1
-
-	if i >= tc.cpunr:
-		i = 0
+if debug:
+	debuglog('Built TCZ list: %s' % (' '.join(tczout)))
 
 # Mount extensions
 
@@ -121,43 +110,40 @@ forks = 0
 for p in tczout:
 
 	pid = os.fork()
-	if pid != 0:
-		if debug:
-			forklog("PID:%d Started for %s" % (pid, p))
-		forks += 1
-		f = forks
 
 	if pid == 0:
-		try:
-			if showapps:
-				print(p[:-4] + ' ', end="")
-				print('\033[1;33m', end="")
+		#This is the child process.
+		if showapps:
+			print(p[:-4] + ' ', end="")
+			print('\033[1;33m', end="")
 
-			fp = open(sys.argv[1] + '/optional/' + p, 'r')
-			fp.close()
-			os.mkdir(root + '/tmp/tcloop/' + p[:-4])
-			mount_extension('sudo /usr/bin/mount -t squashfs -o loop ' + sys.argv[1] + '/optional/' + p + ' ' + root + '/tmp/tcloop/' + p[:-4], p[:4])
-		except OSError:
-			if showapps:
-				print("\nExtension already loaded:", p)
-			sys.exit(1)
-			continue
+		os.mkdir(root + '/tmp/tcloop/' + p[:-4])
+		system_command('sudo /usr/bin/mount -t squashfs -o loop ' + sys.argv[1] + '/optional/' + p + ' ' + root + '/tmp/tcloop/' + p[:-4], p[:-4])
+		#Child process exits
 		sys.exit(0)
 	else:
+		#This is the parent process
+		if debug:
+			debuglog("PID:%d Started for mounting %s" % (pid, p))
+		forks += 1
+
+		# Start forks up to the number of cpu cores.
 		if forks >= maxforks:
 			tmp=os.waitpid(0, 0)
 			if debug:
-				forklog("PID:%d Finished, exit code: %d" % tmp)
+				debuglog("PID:%d Finished, exit code: %d" % tmp)
 			forks -= 1
+		pid = 0
 
+# There are multiple forks running, wait for them to finish.
 for j in range(forks):
 	tmp=os.waitpid(0, 0)
 	if debug:
-		forklog("PID:%d Finished, exit code: %d" % tmp)
-
-waitforfinish()
+		debuglog("PID:%d Finished, exit code: %d" % tmp)
 
 mklog('Mount TCZ (%d)' % (len(tczout)))
+if debug:
+	debuglog('Mount TCZ (%d)' % (len(tczout)))
 
 try:
 	fp = open(sys.argv[1] + '/copy2fs.flg', 'r')
@@ -165,7 +151,6 @@ try:
 	copy2fsflg = True
 except OSError:
 	copy2fsflg = False
-
 
 # Add extensions to file system
 
@@ -181,79 +166,62 @@ forks = 0
 for p in tczout:
 
 	pid = os.fork()
-	if pid != 0:
-		if debug:
-			forklog("PID:%d Started for %s" % (pid, p))
-		forks += 1
-		f = forks
 
 	if pid == 0:
-		try:
-			fp = open(sys.argv[1] + '/optional/' + p, 'r')
-			fp.close()
-		except OSError:
-			print("\nExtension not found:%s" % p)
-			continue
-
+		#This is the child process
 		if showapps:
 			print(p[:-4] + ' ', end="")
 
 		if copy2fsflg:
-			os.system('sudo busybox cp -r ' + root + '/tmp/tcloop/' + p[:-4] + '/* /')
-			os.system('sudo busybox.suid umount ' + root + '/tmp/tcloop/' + p[:-4])
-			os.system('sudo busybox rm -r -f ' + root + '/tmp/tcloop/' + p[:-4])
+			system_command('sudo busybox cp -r ' + root + '/tmp/tcloop/' + p[:-4] + '/* /', p[:-4])
+			system_command('sudo busybox.suid umount ' + root + '/tmp/tcloop/' + p[:-4], p[:-4])
+			system_command('sudo busybox rm -r -f ' + root + '/tmp/tcloop/' + p[:-4], p[:-4])
 		else:
-			os.system('sudo busybox cp -r -f -s ' + root + '/tmp/tcloop/' + p[:-4] + '/* ' + root + '/')
+			system_command('sudo busybox cp -r -f -s ' + root + '/tmp/tcloop/' + p[:-4] + '/* ' + root + '/', p[:-4])
+		#The child process exits.
 		sys.exit(0)
 	else:
+		if debug:
+			debuglog("PID:%d Started for copying %s" % (pid, p))
+		forks += 1
 		if forks >= maxforks:
 			tmp=os.waitpid(0, 0)
 			if debug:
-				forklog("PID:%d Finished, exit code: %d" % tmp)
+				debuglog("PID:%d Finished, exit code: %d" % tmp)
 			forks -= 1
+		pid = 0
 
+# There are multiple forks running, wait for them to finish.
 for j in range(forks):
 	tmp=os.waitpid(0, 0)
 	if debug:
-		forklog("PID:%d Finished, exit code: %d" % tmp)
-
-# Scan for extension load scripts. Separated from above, since the forked processes can't update variable.
-for p in tczout:
-	try:
-		fp = open(root + '/usr/local/tce.installed/' + p[:-4], 'r')
-		fp.close()
-		stlst.append(p[:-4])
-	except OSError:
-		fp = open(root + '/usr/local/tce.installed/' + p[:-4], 'wb')
-		fp.close()
-
-waitforfinish()
+		debuglog("PID:%d Finished, exit code: %d" % tmp)
 
 mklog('Add to file system')
+if debug:
+	debuglog('Add to file system')
 
 pid = os.fork()
-if pid != 0:
-	if debug:
-		forklog("PID:%d Started" % pid)
 if pid == 0:
 	st = os.system('sudo /sbin/ldconfig')
 	sys.exit(0)
+else:
+	if debug:
+		debuglog("PID:%d Started for ldconfig" % pid)
 
 pid = os.fork()
-if pid != 0:
-	if debug:
-		forklog("PID:%d Started" % pid)
 if pid == 0:
 	st = os.system('sudo /sbin/depmod -b /')
 	sys.exit(0)
+else:
+	if debug:
+		debuglog("PID:%d Started for depmod" % pid)
 
 #Wait for previous 2 forks to finish.
-tmp=os.waitpid(0, 0)
-if debug:
-	forklog("PID:%d Finished, exit code: %d" % tmp)
-tmp=os.waitpid(0, 0)
-if debug:
-	forklog("PID:%d Finished, exit code: %d" % tmp)
+for i in range(2):
+	tmp=os.waitpid(0, 0)
+	if debug:
+		debuglog("PID:%d Finished, exit code: %d" % tmp)
 
 # Executing startup scripts
 
@@ -266,32 +234,42 @@ if showapps:
 
 forks = 0
 
-for p in stlst:
-	script='/usr/local/tce.installed/' + p
+# Scan for extension load scripts, and run them if found.
+for p in tczout:
+	script='/usr/local/tce.installed/' + p[:-4]
 	pid = os.fork()
-	if pid != 0:
-		if debug:
-			forklog("PID:%d Started for %s" % (pid, p))
-		forks += 1
-		f = forks
 
 	if pid == 0:
 		if showapps:
-			print(p + ' ', end="")
+			print(p[:-4] + ' ', end="")
+
 		if os.access( script, os.X_OK) == True:
-			os.system('sudo %s' % script)
+			if debug:
+				debuglog("Executing: %s" % script)
+			system_command('sudo %s' % script, script)
+		else:
+			#if no startup script is there, create an empty file needed.
+			try:
+				fp = open(root + '/usr/local/tce.installed/' + p[:-4], 'wb')
+				fp.close()
+			except OSError:
+				pass
 		sys.exit(0)
 	else:
+		if debug:
+			debuglog("PID:%d Started for %s" % (pid, p))
+		forks += 1
+		f = forks
 		if forks >= maxforks:
 			tmp=os.waitpid(0, 0)
 			if debug:
-				forklog("PID:%d Finished, exit code: %d" % tmp)
+				debuglog("PID:%d Finished, exit code: %d" % tmp)
 			forks -= 1
 
 for j in range(forks):
 	tmp=os.waitpid(0, 0)
 	if debug:
-		forklog("PID:%d Finished, exit code: %d" % tmp)
+		debuglog("PID:%d Finished, exit code: %d" % tmp)
 
 mklog('Execute startup scripts')
 
