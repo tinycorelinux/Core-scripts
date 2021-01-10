@@ -11,7 +11,7 @@ TCEOPT="/tmp/tce/optional"
 TCLOOP="/tmp/tcloop"
 TCEINSTALLED="/usr/local/tce.installed"
 INSTALLED=""
-VERSION="$(cat /usr/share/doc/tc/release.txt)"
+VERSION="$(getFullVer)"
 KERNEL="$(uname -r)"
 
 addUser(){
