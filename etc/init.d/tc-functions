@@ -273,10 +273,15 @@ BEGIN { writeFlag=1 }
 } ' "$1"
 }
 
-getMajorVer() {
-awk '{printf "%d", $1}' /usr/share/doc/tc/release.txt 
+getFullVer() {
+verid=$(grep '^VERSION_ID=' /etc/os-release)
+echo ${verid#*=}
 }
 
+getMajorVer() {
+fullver=$(getFullVer)
+echo ${fullver%.*}
+}
 
 getBuild() {
 BUILD=`uname -m`

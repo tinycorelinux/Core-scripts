@@ -6,8 +6,8 @@
 
 . /etc/init.d/tc-functions
 useBusybox
-RESULTS="$(cat /usr/share/doc/tc/release.txt)"
-while getopts cls OPTION
+RESULTS="$(getFullVer)"
+while getopts clsm OPTION
 do
   case ${OPTION} in
     c) LATEST=`wget -q -O - $(cat /opt/tcemirror)/latest-$(getBuild) 2>/dev/null`
@@ -25,6 +25,9 @@ do
        exit
        ;;
     s) echo "${RESULTS##*_}"
+       exit
+       ;;
+    m) echo "$(getMajorVer)"
        exit
        ;;
   esac
