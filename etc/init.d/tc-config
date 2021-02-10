@@ -478,9 +478,11 @@ if [ -n "$MYOPT" ]; then
 				[ -d "$MOUNTPOINT"/opt ] || mkdir "$MOUNTPOINT"/opt
 				yes n | cp -ai /opt/* /opt/.[!.]* "$MOUNTPOINT"/opt/ 2>/dev/null
 				mount --bind "$MOUNTPOINT"/opt/ /opt/
-				chgrp -R staff /opt/ >/dev/null 2>&1
-				chmod -R g+w /opt/ >/dev/null 2>&1
-				chmod g+s /opt/ >/dev/null 2>&1
+				for system_file in backgrounds .filetool.lst .xfiletool.lst bootlocal.sh bootsync.sh shutdown.sh tcemirror; do
+					chgrp -R staff /opt/"$system_file" >/dev/null 2>&1
+					chmod -R g+w /opt/"$system_file" >/dev/null 2>&1
+					chmod g+s /opt/"$system_file" >/dev/null 2>&1
+				done
 			;;
 		esac
 
