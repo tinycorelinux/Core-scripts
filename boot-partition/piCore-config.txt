@@ -6,24 +6,24 @@
 #
 
 [PI0]
-initramfs rootfs-piCore-12.0.gz,modules-5.4.51-piCore.gz followkernel
-kernel kernel5451.img
+initramfs rootfs-piCore-13.0.3.gz,modules-5.10.16-piCore.gz followkernel
+kernel kernel-5.10.16-piCore.img
 
 [PI1]
-initramfs rootfs-piCore-12.0.gz,modules-5.4.51-piCore.gz followkernel
-kernel kernel5451.img
+initramfs rootfs-piCore-13.0.3.gz,modules-5.10.16-piCore.gz followkernel
+kernel kernel-5.10.16-piCore.img
 
 [PI2]
-initramfs rootfs-piCore-12.0.gz,modules-5.4.51-piCore-v7.gz followkernel
-kernel kernel5451v7.img
+initramfs rootfs-piCore-13.0.3.gz,modules-5.10.16-piCore-v7.gz followkernel
+kernel kernel-5.10.16-piCore-v7.img
 
 [PI3]
-initramfs rootfs-piCore-12.0.gz,modules-5.4.51-piCore-v7.gz followkernel
-kernel kernel5451v7.img
+initramfs rootfs-piCore-13.0.3.gz,modules-5.10.16-piCore-v7.gz followkernel
+kernel kernel-5.10.16-piCore-v7.img
 
 [PI4]
-initramfs rootfs-piCore-12.0.gz,modules-5.4.51-piCore-v7l.gz followkernel
-kernel kernel5451v7l.img
+initramfs rootfs-piCore-13.0.3.gz,modules-5.10.16-piCore-v7l.gz followkernel
+kernel kernel-5.10.16-piCore-v7l.img
 
 [ALL]
 cmdline cmdline.txt
