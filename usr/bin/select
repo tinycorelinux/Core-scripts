@@ -22,11 +22,11 @@ function read_console() {
 END {
 	if ( NR < 1 ) {
 		print "q" > answer
-		break
+		exit
 	}
 	if ( NR == 1 ) {
 		print A[1] > answer
-		break
+		exit
 	}
 	do {
 		system ("clear")
