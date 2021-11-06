@@ -4,14 +4,19 @@
 
 # RPi PI0-1-2 are not supported on this image.
 
+[PI02]
+initramfs rootfs-piCore64-13.1.gz,modules-5.10.76-piCore-v8.gz followkernel
+kernel kernel51076v8.img
+arm_64bit=1
+
 [PI3]
-initramfs rootfs-piCore64-13.0.gz,modules-5.10.39-piCore-v8.gz followkernel
-kernel kernel51039v8.img
+initramfs rootfs-piCore64-13.1.gz,modules-5.10.76-piCore-v8.gz followkernel
+kernel kernel51076v8.img
 arm_64bit=1
 
 [PI4]
-initramfs rootfs-piCore64-13.0.gz,modules-5.10.39-piCore-v8.gz followkernel
-kernel kernel51039v8.img
+initramfs rootfs-piCore64-13.1.gz,modules-5.10.76-piCore-v8.gz followkernel
+kernel kernel51076v8.img
 arm_64bit=1
 
 [ALL]

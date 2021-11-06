@@ -6,24 +6,28 @@
 #
 
 [PI0]
-initramfs rootfs-piCore-13.0.3.gz,modules-5.10.16-piCore.gz followkernel
-kernel kernel-5.10.16-piCore.img
+initramfs rootfs-piCore-13.1.0.gz,modules-5.10.76-piCore.gz followkernel
+kernel kernel-5.10.76-piCore.img
+
+[PI02]
+initramfs rootfs-piCore-13.1.0.gz,modules-5.10.76-piCore-v7.gz followkernel
+kernel kernel-5.10.76-piCore-v7.img
 
 [PI1]
-initramfs rootfs-piCore-13.0.3.gz,modules-5.10.16-piCore.gz followkernel
-kernel kernel-5.10.16-piCore.img
+initramfs rootfs-piCore-13.1.0.gz,modules-5.10.76-piCore.gz followkernel
+kernel kernel-5.10.76-piCore.img
 
 [PI2]
-initramfs rootfs-piCore-13.0.3.gz,modules-5.10.16-piCore-v7.gz followkernel
-kernel kernel-5.10.16-piCore-v7.img
+initramfs rootfs-piCore-13.1.0.gz,modules-5.10.76-piCore-v7.gz followkernel
+kernel kernel-5.10.76-piCore-v7.img
 
 [PI3]
-initramfs rootfs-piCore-13.0.3.gz,modules-5.10.16-piCore-v7.gz followkernel
-kernel kernel-5.10.16-piCore-v7.img
+initramfs rootfs-piCore-13.1.0.gz,modules-5.10.76-piCore-v7.gz followkernel
+kernel kernel-5.10.76-piCore-v7.img
 
 [PI4]
-initramfs rootfs-piCore-13.0.3.gz,modules-5.10.16-piCore-v7l.gz followkernel
-kernel kernel-5.10.16-piCore-v7l.img
+initramfs rootfs-piCore-13.1.0.gz,modules-5.10.76-piCore-v7l.gz followkernel
+kernel kernel-5.10.76-piCore-v7l.img
 
 [ALL]
 cmdline cmdline.txt
