@@ -19,6 +19,9 @@ initramfs rootfs-piCore64-13.1.gz,modules-5.10.77-piCore-v8.gz followkernel
 kernel kernel51077v8.img
 arm_64bit=1
 
+[CM4]
+otg_mode=1
+
 [ALL]
 cmdline cmdline.txt
 
