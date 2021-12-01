@@ -161,7 +161,10 @@ echo "${D2#/dev/}"/$FULLPATH > /etc/sysconfig/backup_device
 trap failed SIGTERM
 
 if [ "$BACKUP" ] ; then
+  # Use a dummy file to save .filetool.lst's timestamp, so we can restore it after sed changes it
+  dummy=$(mktemp); touch -r /opt/.filetool.lst $dummy
   sed -i /^$/d /opt/.filetool.lst
+  touch -r $dummy /opt/.filetool.lst; rm $dummy
   if [ "$SAFE" ]; then
     if [ -r $MOUNTPOINT/"$FULLPATH"/${MYDATA}.tgz.bfe -o -r $MOUNTPOINT/"$FULLPATH"/${MYDATA}.tgz ]; then                     
       echo -n "Copying existing backup to $MOUNTPOINT/"$FULLPATH"/${MYDATA}bk.[tgz|tgz.bfe] .. "  
