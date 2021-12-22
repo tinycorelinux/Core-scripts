@@ -216,8 +216,8 @@ gzip -d md5.db.gz
 # First test for interactive mode - passed parameters
 if [ -n "$1" ]; then
 	case $1 in
-		list) LIST=1; process_cmd "$2" ;;
-		query) QUERY=1; process_cmd "$2" ;;
+		list) LIST=1; process_cmd "${2:-$(readlink /etc/sysconfig/tcedir)}" ;;
+		query) QUERY=1; process_cmd "${2:-$(readlink /etc/sysconfig/tcedir)}" ;;
 		update) unset QUERY; process_cmd "$2" ;;
 	esac
 fi
