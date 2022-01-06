@@ -50,6 +50,7 @@ for i in `cat /proc/cmdline`; do
 				swapfile*) SWAPFILE=${i#*=} ;;
 				resume*) RESUME=${i#*=} ;;
 				host*) HOST=1 ;;
+				nodhcp* ) NODHCP=${i#*=} ;;
 				nfsmount* ) NFSMOUNT=${i#*=} ;;
 				tftplist* ) TFTPLIST=${i#*=} ;;
 				httplist* ) HTTPLIST=${i#*=} ;;
@@ -184,6 +185,9 @@ fi
 
 /sbin/ifconfig lo 127.0.0.1 up
 /sbin/route add 127.0.0.1 lo &
+if [ -n "$NODHCP" -a "$(type -t $NODHCP)" == "$NODHCP" ]; then
+	$NODHCP
+fi
 
 if [ -n "$AOE" ]; then
 	IFACE=$( echo $AOE | awk -F: '{ print $1 }')
@@ -218,9 +222,7 @@ fi
 
 # dhcp.sh runs udhcpc async, so it exits before network is up
 wait4Server() {
-	if [ -n "$NODHCP" -a "$(type -t static_ip)" == "static_ip" ]; then
-		static_ip
-	else
+	if [ -z "$NODHCP" ]; then
 		/etc/init.d/dhcp.sh
 	fi
 	SERVER=$1 ; NOPING=$2 ; CNT=0
