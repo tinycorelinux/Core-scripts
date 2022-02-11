@@ -49,13 +49,7 @@ checkntfs() {
 }
 
 # Loop through block devices
-for i in `find /sys/block/*/ -name dev`; do
-  case "$i" in
-    *loop*|*ram*)
-      continue
-      ;;
-  esac
-
+for i in `find /sys/block/*/ -name dev ! -regex '.*\(/loop\|/ram\|/zram\).*'`; do
   DEVNAME=`echo "$i"| tr [!] [/] | awk 'BEGIN{FS="/"}{print $(NF-1)}'`
   DEVMAJOR="$(cat $i|cut -f1 -d:)"
 
@@ -64,8 +58,8 @@ for i in `find /sys/block/*/ -name dev`; do
 
 # First try blkid approach for FSTYPE for non floppy drives.
   [ "$DEVMAJOR" != 2 -a -z "$FSTYPE" ] && FSTYPE="$(fstype "/dev/$DEVNAME")"
-  [ "$FSTYPE" == "linux_raid_member" ] && continue
-  [ "$FSTYPE" == "LVM2_member" ] && continue
+  case "$FSTYPE" in linux_raid_member|LVM2_member|zfs_member) continue;  ;; esac
+
   if [ -z "$FSTYPE" ]; then
 
     case "$DEVMAJOR" in
