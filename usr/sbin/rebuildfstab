@@ -31,6 +31,23 @@ CDROMSF=/etc/sysconfig/cdroms
 
 grep -v "$ADDEDBY" /etc/fstab > "$TMP"
 
+NTFSDRIVER=""
+checkntfs() {
+    if [ -z "$NTFSDRIVER" ]; then
+        if which ntfs-3g > /dev/null; then
+            NTFSDRIVER="ntfs-3g"
+        else
+            modprobe -q ntfs3 && NTFSDRIVER="ntfs3" || NTFSDRIVER="ntfs"
+        fi
+    fi
+
+    FSTYPE="$NTFSDRIVER"
+    case "$FSTYPE" in
+        ntfs3|ntfs-3g) OPTIONS="$OPTIONS",iocharset=utf8;  ;;
+        ntfs) OPTIONS="$OPTIONS,ro,umask=000";  ;;
+    esac
+}
+
 # Loop through block devices
 for i in `find /sys/block/*/ -name dev`; do
   case "$i" in
@@ -41,7 +58,7 @@ for i in `find /sys/block/*/ -name dev`; do
 
   DEVNAME=`echo "$i"| tr [!] [/] | awk 'BEGIN{FS="/"}{print $(NF-1)}'`
   DEVMAJOR="$(cat $i|cut -f1 -d:)"
-  
+
   FSTYPE=""
   case "$CDROMS" in *"$DEVROOT/$DEVNAME"*) FSTYPE="auto" ;; esac
 
@@ -65,15 +82,6 @@ for i in `find /sys/block/*/ -name dev`; do
     esac
   fi
 
-checkntfs() {
-  if [ -f /usr/local/bin/ntfs-3g ]; then
-      FSTYPE="ntfs-3g"
-      OPTIONS="$OPTIONS"
-  else
-      FSTYPE="ntfs"
-      OPTIONS="$OPTIONS,ro,umask=000"
-  fi	
-}
   [ -z "$FSTYPE" ] && continue
   MOUNTPOINT="/mnt/$DEVNAME"
   OPTIONS="noauto,users,exec"
@@ -85,7 +93,7 @@ checkntfs() {
   esac
   if [ "$MOUNTPOINT" != "none" ]; then
     mkdir -p "/mnt/$DEVNAME" 2>/dev/null >/dev/null
-  fi	
+  fi
   grep -q "^$DEVROOT/$DEVNAME " $TMP ||
     printf "%-15s %-15s %-8s %-20s %-s\n" "$DEVROOT/$DEVNAME" "$MOUNTPOINT" "$FSTYPE" "$OPTIONS" "0 0 $ADDEDBY" >>"$TMP"
 done
