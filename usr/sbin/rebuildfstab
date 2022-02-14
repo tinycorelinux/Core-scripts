@@ -34,10 +34,10 @@ grep -v "$ADDEDBY" /etc/fstab > "$TMP"
 NTFSDRIVER=""
 checkntfs() {
     if [ -z "$NTFSDRIVER" ]; then
-        if which ntfs-3g > /dev/null; then
+        if [ -f /usr/bin/ntfs-3g ] || [ -f /usr/local/bin/ntfs-3g ] || [ -f /bin/ntfs-3g ]; then
             NTFSDRIVER="ntfs-3g"
         else
-            modprobe -q ntfs3 && NTFSDRIVER="ntfs3" || NTFSDRIVER="ntfs"
+            NTFSDRIVER="ntfs3"
         fi
     fi
 
