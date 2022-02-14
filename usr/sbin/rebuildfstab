@@ -21,9 +21,6 @@ TMP="/tmp/fstab.$$.tmp"
 ADDEDBY="# Added by TC"
 DEVROOT="/dev"
 
-# Create a list of fdisk -l
-FDISKL=`fdisk -l | awk '$1 ~ /dev/{printf " %s ",$1}'`
-
 # Read a list of CDROM/DVD Drives
 CDROMS=""
 CDROMSF=/etc/sysconfig/cdroms
@@ -49,34 +46,17 @@ checkntfs() {
 }
 
 # Loop through block devices
-for i in `find /sys/block/*/ -name dev ! -regex '.*\(/loop\|/ram\|/zram\).*'`; do
-  DEVNAME=`echo "$i"| tr [!] [/] | awk 'BEGIN{FS="/"}{print $(NF-1)}'`
-  DEVMAJOR="$(cat $i|cut -f1 -d:)"
-
-  FSTYPE=""
+while read BLOCKDEV DEVNAME FSTYPE; do
   case "$CDROMS" in *"$DEVROOT/$DEVNAME"*) FSTYPE="auto" ;; esac
-
-# First try blkid approach for FSTYPE for non floppy drives.
-  [ "$DEVMAJOR" != 2 -a -z "$FSTYPE" ] && FSTYPE="$(fstype "/dev/$DEVNAME")"
   case "$FSTYPE" in linux_raid_member|LVM2_member|zfs_member) continue;  ;; esac
-
   if [ -z "$FSTYPE" ]; then
-
+    DEVMAJOR="$(cat $BLOCKDEV|cut -f1 -d:)"
     case "$DEVMAJOR" in
-      2|98)
-        FSTYPE="auto"
-        ;;
-      3|8|11|22|33|34)
-        case "$FDISKL" in *"$DEVROOT/$DEVNAME "*) FSTYPE="$(fstype $DEVROOT/$DEVNAME)" ;; esac
-        case "$CDROMS" in *"$DEVROOT/$DEVNAME"*) FSTYPE="auto" ;; esac
-        ;;
-      179|9|259) # MMC or MD (software raid)
-        FSTYPE="$(fstype $DEVROOT/$DEVNAME)"
-        ;;
+      2|98) FSTYPE="auto";  ;;
+      *) continue;  ;;
     esac
   fi
 
-  [ -z "$FSTYPE" ] && continue
   MOUNTPOINT="/mnt/$DEVNAME"
   OPTIONS="noauto,users,exec"
   case "$FSTYPE" in
@@ -88,9 +68,19 @@ for i in `find /sys/block/*/ -name dev ! -regex '.*\(/loop\|/ram\|/zram\).*'`; d
   if [ "$MOUNTPOINT" != "none" ]; then
     mkdir -p "/mnt/$DEVNAME" 2>/dev/null >/dev/null
   fi
-  grep -q "^$DEVROOT/$DEVNAME " $TMP ||
-    printf "%-15s %-15s %-8s %-20s %-s\n" "$DEVROOT/$DEVNAME" "$MOUNTPOINT" "$FSTYPE" "$OPTIONS" "0 0 $ADDEDBY" >>"$TMP"
-done
+  printf "%-15s %-15s %-8s %-20s %-s\n" "$DEVROOT/$DEVNAME" "$MOUNTPOINT" "$FSTYPE" "$OPTIONS" "0 0 $ADDEDBY" >>"$TMP"
+done < <(find /sys/block/*/ -name dev ! -regex '.*\(/loop\|/ram\|/zram\|\s\).*' | awk -v devroot="$DEVROOT" -v tmptab="$TMP" '
+    BEGIN {
+        while (getline < tmptab > 0) remain[$1]=1
+        FS="/|!"
+    }
+    {d=devroot"/"$(NF-1); if (! (d in devs) && ! (d in remain)) {s=s" "d; devs[d]=$0;}}
+    END {
+        FS="[ :\"=]+"
+        while ("blkid -s TYPE "s | getline) fs[$1]=$3
+        for (d in devs) print devs[d]" "gensub(/.*\//,"",1,d)" "fs[d]
+    }
+' | sort -f -k 1)
 
 
 # Clean up
