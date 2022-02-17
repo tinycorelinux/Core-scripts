@@ -61,7 +61,7 @@ while read BLOCKDEV DEVNAME FSTYPE; do
   OPTIONS="noauto,users,exec"
   case "$FSTYPE" in
     ntfs) checkntfs ;;
-    vfat|msdos) OPTIONS="${OPTIONS},umask=000" ;;
+    vfat|msdos) OPTIONS="${OPTIONS},utf8,umask=000" ;;
     ext2|ext3) OPTIONS="${OPTIONS},relatime" ;;
     swap) OPTIONS="defaults"; MOUNTPOINT="none" ;;
   esac
