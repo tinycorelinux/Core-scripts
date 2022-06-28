@@ -2,7 +2,7 @@
 # Tiny Core Browser
 # (c) Robert Shingledecker 2009-2012
 . /etc/init.d/tc-functions
-trap 'echo && exit 1 1>&2' 1 2 15
+trap 'echo; exit 1 1>&2' 1 2 15
 
 searchInfoList() {
 	clear
