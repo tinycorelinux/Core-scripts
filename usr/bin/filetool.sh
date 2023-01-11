@@ -5,6 +5,7 @@
 # in the file .filetool.lst
 # Added ideas from WDef for invalid device check and removal of bfe password upon failure
 # Added comparerestore and dry run (Brian Smith)
+# Added colors (Alphons van der Heijden)
 . /etc/init.d/tc-functions
 useBusybox
 
@@ -24,15 +25,15 @@ MYDATA=mydata
 # Functions --
 
 abort(){
-  echo "Usage: filetool.sh options device"
+  echo "${RED}Usage: ${BLUE}filetool.sh ${MAGENTA}options ${YELLOW}device${NORMAL}"
   echo "Where required action options are:"
-  echo "-b backup"
-  echo "-r restore"
-  echo "-s safe backup mode"
-  echo "-d dry run backup"
+  echo "${MAGENTA}-b${NORMAL} backup"
+  echo "${MAGENTA}-r${NORMAL} restore"
+  echo "${MAGENTA}-s${NORMAL} safe backup mode"
+  echo "${MAGENTA}-d${NORMAL} dry run backup"
   echo "Optional display options are:"
-  echo "-p prompted verbose listing"
-  echo "-v verbose listing"
+  echo "${MAGENTA}-p${NORMAL} prompted verbose listing"
+  echo "${MAGENTA}-v${NORMAL} verbose listing"
   echo -n "Press enter to continue:" ; read ans
   exit 1
 }
@@ -61,7 +62,7 @@ exit $1
 }
 
 failed(){
-echo "WARNING: Selected operation has failed. Proceed with extreme caution."
+echo "${MAGENTA}WARNING: Selected operation has failed. Proceed with extreme caution.${NORMAL}"
 [ "$PROMPT" ] && echo -n "Press enter to continue:" && read ans
 clean_up 98
 }
@@ -100,21 +101,21 @@ shift `expr $OPTIND - 1`
 [ "$PROMPT" ] && VERBOSE=TRUE
 
 if [ $DRYRUN ]; then
-  echo "Performing dry run backup (backup will not actually take place).   Please wait."; echo
+  echo "${BLUE}Performing dry run backup (backup will not actually take place).   Please wait.${NORMAL}"; echo
   totalcompressedsize=`sudo /bin/tar -C / -T /opt/.filetool.lst -X /opt/.xfiletool.lst -cvzf - 2>/tmp/backup_dryrun_list | wc -c`
   while read entry; do
     if [ -f "/${entry}" ]; then
       size=`sudo /bin/ls -al "/${entry}" | awk '{print $5}'`
       totalsize=$(($totalsize + $size))
       sizemb=`Fixed3Div $size $M`
-      printf "%6.2f MB  /%s\n" $sizemb "$entry"
+      printf "%6.2f MB  ${YELLOW}/%s${NORMAL}\n" $sizemb "$entry"
     fi
   done < /tmp/backup_dryrun_list
   rm /tmp/backup_dryrun_list
   totalsizemb=`Fixed3Div $totalsize $M`
   totalcompressedsizemb=`Fixed3Div $totalcompressedsize $M`
-  printf "\nTotal backup size (uncompressed):  %6.2f MB (%d bytes)\n" $totalsizemb $totalsize
-  printf "Total backup size (compressed)  :  %6.2f MB (%d bytes)\n\n" $totalcompressedsizemb $totalcompressedsize
+  printf "\n${BLUE}Total backup size (uncompressed):  ${NORMAL}%6.2f MB (%d bytes)\n" $totalsizemb $totalsize
+  printf "${BLUE}Total backup size (compressed)  :  ${NORMAL}%6.2f MB (%d bytes)\n\n" $totalcompressedsizemb $totalcompressedsize
   exit 0
 fi
 
@@ -129,7 +130,7 @@ if [ -z "$TARGET" ]; then
   # Last chance to default to persistent TCE directory if exists
   TCEDIR="$(readlink /etc/sysconfig/tcedir)"
   if [ "$TCEDIR" == "/tmp/tce" ]; then
-    echo "Invalid or not found $TARGET" > /tmp/backup_status
+    echo "${RED}Invalid or not found ${YELLOW}$TARGET${NORMAL}" > /tmp/backup_status
     wrapup
   else
     TARGET="${TCEDIR#/mnt/}"
@@ -144,14 +145,14 @@ FULLPATH="${TARGET#$DEVICE/}"
 find_mountpoint $DEVICE
 
 if [ -z "$MOUNTPOINT" ]; then
-  echo "Invalid device $DEVICE" > /tmp/backup_status
+  echo "${RED}Invalid device ${YELLOW}$DEVICE${NORMAL}" > /tmp/backup_status
   wrapup
 fi
 
 if [ $MOUNTED == "no" ]; then
    sudo /bin/mount $MOUNTPOINT
    if [ "$?" != 0 ]; then
-      echo "Unable to mount device $DEVICE" > /tmp/backup_status
+      echo "${RED}Unable to mount device ${YELLOW}$DEVICE${NORMAL}" > /tmp/backup_status
       wrapup
    fi
 fi
@@ -167,36 +168,36 @@ if [ "$BACKUP" ] ; then
   touch -r $dummy /opt/.filetool.lst; rm $dummy
   if [ "$SAFE" ]; then
     if [ -r $MOUNTPOINT/"$FULLPATH"/${MYDATA}.tgz.bfe -o -r $MOUNTPOINT/"$FULLPATH"/${MYDATA}.tgz ]; then                     
-      echo -n "Copying existing backup to $MOUNTPOINT/"$FULLPATH"/${MYDATA}bk.[tgz|tgz.bfe] .. "  
+      echo -n "${BLUE}Copying existing backup to ${YELLOW}$MOUNTPOINT/"$FULLPATH"/${MYDATA}bk.[tgz|tgz.bfe]${BLUE} .. "  
       sudo /bin/mv -f $MOUNTPOINT/"$FULLPATH"/${MYDATA}.tgz $MOUNTPOINT/"$FULLPATH"/${MYDATA}bk.tgz 2>/dev/null || sudo /bin/mv -f $MOUNTPOINT/"$FULLPATH"/${MYDATA}.tgz.bfe $MOUNTPOINT/"$FULLPATH"/${MYDATA}bk.tgz.bfe 2>/dev/null
       if [ "$?" == 0 ]; then
-        echo -e "\nDone."
+        echo "${GREEN}Done.${NORMAL}"
       else
-        echo "Error: Unable to rename ${MYDATA}.tgz to ${MYDATA}bk.tgz"
+        echo -e "\n${RED}Error: Unable to rename ${YELLOW}${MYDATA}.tgz ${RED}to ${YELLOW}${MYDATA}bk.tgz${NORMAL}"
         exit 2
       fi
     else                                                                                                                      
-      echo "Neither ${MYDATA}.tgz nor ${MYDATA}.tgz.bfe exist.  Proceeding with creation of initial backup ..."               
+      echo "${MAGENTA}Neither ${YELLOW}${MYDATA}.tgz${MAGENTA} nor ${YELLOW}${MYDATA}.tgz.bfe${MAGENTA} exist. ${BLUE}Proceeding with creation of initial backup ...${NORMAL}"
     fi
   fi
   if [ "$VERBOSE" ]; then
     sudo /bin/tar -C / -T /opt/.filetool.lst -X /opt/.xfiletool.lst  -czvf $MOUNTPOINT/"$FULLPATH"/${MYDATA}.tgz
     [ "$PROMPT" ] && echo -n "Press enter to continue:" &&  read ans
   else
-    echo -n "Backing up files to $MOUNTPOINT/$FULLPATH/${MYDATA}.tgz "
+    echo -n "${BLUE}Backing up files to ${YELLOW}$MOUNTPOINT/$FULLPATH/${MYDATA}.tgz ${BLUE}"
     [ -f /tmp/backup_status ] && sudo /bin/rm -f /tmp/backup_status
-    sudo /bin/tar -C / -T /opt/.filetool.lst -X /opt/.xfiletool.lst  -czf "$MOUNTPOINT/"$FULLPATH"/${MYDATA}.tgz"  2>/tmp/backup_status &
+    sudo /bin/tar -C / -T /opt/.filetool.lst -X /opt/.xfiletool.lst -czf "$MOUNTPOINT/"$FULLPATH"/${MYDATA}.tgz" 2>/tmp/backup_status &
     rotdash $!
     sync
     [ -s /tmp/backup_status ] && sed -i '/socket ignored/d' /tmp/backup_status 2>/dev/null
-    [ -s /tmp/backup_status ] && { echo -e "\nThere was an issue, see /tmp/backup_status."; exit 1; }
+    [ -s /tmp/backup_status ] && { echo -e "\n${RED}There was an issue, see ${YELLOW}/tmp/backup_status${RED}.${NORMAL}"; exit 1; }
     touch /tmp/backup_done
   fi
   if [ -f /etc/sysconfig/bfe ]; then
-     echo -n "encrypting .. "
+     echo -n "${BLUE}encrypting .. ${NORMAL} "
      blowfish_encrypt ${MYDATA}.tgz
   fi
-  echo -e " \nDone."
+  echo  "${GREEN}Done.${NORMAL}"
   clean_up 0
 fi
 
@@ -236,20 +237,20 @@ cat << EOD | sudo /usr/bin/bcrypt -o "$MOUNTPOINT"/"$FULLPATH"/$TARGETFILE 2>/de
 EOD
        if [ "$?" != 0 ]; then failed; fi
      else
-       echo -n "Restoring backup files from encrypted backup $MOUNTPOINT/$FULLPATH mounted over device $D2 "
+       echo -n "${BLUE}Restoring backup files from encrypted backup ${YELLOW}$MOUNTPOINT/$FULLPATH ${BLUE}mounted over device ${YELLOW}$D2 ${NORMAL}"
 cat << EOD | sudo /usr/bin/bcrypt -o "$MOUNTPOINT"/"$FULLPATH"/$TARGETFILE 2>/dev/null | sudo /bin/tar  -C / -zxf -
 "$KEY"
 EOD
        if [ "$?" != 0 ]; then failed; fi
-       echo -e "\nDone."
+       echo "${GREEN}Done.${NORMAL}"
      fi
      clean_up 0
   else
      if [ -f /etc/sysconfig/bfe ]; then
         echo
-        echo "Warning PROTECT boot code used and encrypted backup file not found!"
+        echo "${MAGENTA}Warning PROTECT boot code used and encrypted backup file not found!"
         echo "Proceeding with normal restore operations."
-        echo "Encryption will occur upon next backup or shutdown."
+        echo "Encryption will occur upon next backup or shutdown.${NORMAL}"
 	[ "$PROMPT" ] && echo -n "Press enter to continue:" && read ans
      fi
   fi
@@ -268,12 +269,12 @@ EOD
     sudo /bin/tar -C / -zxvf $MOUNTPOINT/"$FULLPATH"/${MYDATA}.tgz
     [ "$PROMPT" ] && echo -n "Press enter to continue:" && read ans
   else
-    echo -n "Restoring backup files from $MOUNTPOINT/$FULLPATH/${MYDATA}.tgz "
+    echo -n "${BLUE}Restoring backup files from ${YELLOW}$MOUNTPOINT/$FULLPATH/${MYDATA}.tgz${NORMAL} "
     sudo /bin/tar -C / -zxf $MOUNTPOINT/"$FULLPATH"/${MYDATA}.tgz 2>/dev/null &
     rotdash $!
-    echo -e "\nDone."
+    echo "${GREEN}Done.${NORMAL}"
   fi
   clean_up 0
 fi
-echo "Required action flag is missing: $1"
+echo "${RED}Required action flag is missing:${YELLOW} $1 ${NORMAL}"
 abort
