@@ -68,7 +68,7 @@ while read BLOCKDEV DEVNAME FSTYPE; do
     mkdir -p "/mnt/$DEVNAME" 2>/dev/null >/dev/null
   fi
   printf "%-15s %-15s %-8s %-20s %-s\n" "$DEVROOT/$DEVNAME" "$MOUNTPOINT" "$FSTYPE" "$OPTIONS" "0 0 $ADDEDBY" >>"$TMP"
-done < <(find /sys/block/*/ -name dev -maxdepth 2 ! -regex '.*\(/loop\|/ram\|/zram\|\s\).*' | awk -v devroot="$DEVROOT" -v tmptab="$TMP" '
+done < <(find /sys/block/*/ -maxdepth 2 -name dev ! -regex '.*\(/loop\|/ram\|/zram\|\s\).*' | awk -v devroot="$DEVROOT" -v tmptab="$TMP" '
     BEGIN {
         while (getline < tmptab > 0) remain[$1]=1
         FS="/|!"
