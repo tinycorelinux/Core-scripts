@@ -62,6 +62,7 @@ while read BLOCKDEV DEVNAME FSTYPE; do
   case "$FSTYPE" in
     ntfs) checkntfs ;;
     vfat|msdos) OPTIONS="${OPTIONS},umask=000" ;;
+    ext2|ext3|ext4) OPTIONS="${OPTIONS},relatime" ;;
     swap) OPTIONS="defaults"; MOUNTPOINT="none" ;;
   esac
   if [ "$MOUNTPOINT" != "none" ]; then
