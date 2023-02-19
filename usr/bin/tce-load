@@ -272,7 +272,7 @@ if [ "$TARGETSFETCH" ]; then
 	done || exit 1 # subshell cannot exit directly
 fi
 
-if [ "$TARGETSLOCAL" ]; then
+if [ "$TARGETSLOCAL" ] && [ "$INSTALL" ]; then
 	TARGETSLOCAL="`echo -e $TARGETSLOCAL | awk '/\w/ {print $1}'`"
 	recursive_scan_dep "$TARGETSLOCAL" | while read F; do
 		{ test "${F%% *}" = "@" && EXTENSION="${F#@ }" && SKIP="" || test "$SKIP"; } && continue
