@@ -14,8 +14,13 @@ if zsync -i "$TCEDIR"/"$DB" -q "$MIRROR"/"$DB".zsync
 then
 	rm -f "$DB".zs-old
 else
-	wget -O "$TCEDIR"/"$DB" "$MIRROR"/"$DB"
+	if [ ! -f "$TCEDIR"/"$DB" ]
+	then
+	  wget -O "$TCEDIR"/"$DB".gz "$MIRROR"/"$DB".gz
+	  gunzip "$TCEDIR"/"$DB".gz
+	fi
 fi
 cd - > /dev/null
 
 awk 'BEGIN {FS="\n";RS=""} /'${TARGET}'/{print $1}' "$TCEDIR"/"$DB"
+chmod g+rw "$TCEDIR"/"$DB"
