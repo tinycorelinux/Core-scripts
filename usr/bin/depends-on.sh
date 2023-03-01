@@ -4,18 +4,25 @@
 #        depends-on.sh poppler07.tcz
 #
 #  Returns a list of all extensions that depend on poppler07.tcz.
+#  Search is fuzzy by default. Use -e flag for an exact search.
 #
 #  Most of this script was copied from provides.sh.  Rich.
 
 . /etc/init.d/tc-functions
 useBusybox
 
+exact=false
+if [ "$1" = "-e" ]; then
+	exact=true
+	shift
+fi
+
 TARGET="$1"
 
 case $TARGET in
     ""|-h|-help|--help)
         echo
-        head -n7 $0 | grep -v "!/bin/" | tr '#' ' '
+        head -n8 $0 | grep -v "!/bin/" | tr '#' ' '
         echo
         exit 1
         ;;
@@ -51,4 +58,10 @@ gunzip -kf "$DBGZ"
 
 cd - > /dev/null
 
-awk 'BEGIN {FS="\n";RS=""} /'${TARGET}'/{print $1}' "$TCEDIR"/"$DB"
+if $exact; then
+	TARGET="${TARGET%.tcz}.tcz"
+	awk 'BEGIN {FS="\n";RS=""} /\n'${TARGET}'/{print $1}' "$TCEDIR"/"$DB" | grep -v "^${TARGET}"
+else
+	awk 'BEGIN {FS="\n";RS=""} /'${TARGET}'/{print $1}' "$TCEDIR"/"$DB"
+fi
+
