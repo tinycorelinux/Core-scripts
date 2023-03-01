@@ -4,16 +4,16 @@
 #        depends-on.sh poppler07.tcz
 #
 #  Returns a list of all extensions that depend on poppler07.tcz.
-#  Search is fuzzy by default. Use -e flag for an exact search.
+#  Search is exact by default. Use -f flag for a fuzzy search.
 #
 #  Most of this script was copied from provides.sh.  Rich.
 
 . /etc/init.d/tc-functions
 useBusybox
 
-unset exact
-if [ "$1" = "-e" ]; then
-	exact=true
+unset FUZZY
+if [ "$1" = "-f" ]; then
+	FUZZY=1
 	shift
 fi
 
@@ -58,9 +58,10 @@ gunzip -kf "$DBGZ"
 
 cd - > /dev/null
 
-if [ -n "$exact" ]; then
+if [ -n "$FUZZY" ]; then
+	TARGET="${TARGET%.tcz}"
+	awk 'BEGIN {FS="\n";RS=""} /'${TARGET}'/{print $1}' "$TCEDIR"/"$DB"
+else
 	TARGET="${TARGET%.tcz}.tcz"
 	awk 'BEGIN {FS="\n";RS=""} /\n'${TARGET}'/{print $1}' "$TCEDIR"/"$DB" | grep -v "^${TARGET}"
-else
-	awk 'BEGIN {FS="\n";RS=""} /'${TARGET}'/{print $1}' "$TCEDIR"/"$DB"
 fi
