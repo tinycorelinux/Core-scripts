@@ -11,7 +11,7 @@
 . /etc/init.d/tc-functions
 useBusybox
 
-exact=false
+unset exact
 if [ "$1" = "-e" ]; then
 	exact=true
 	shift
@@ -58,10 +58,9 @@ gunzip -kf "$DBGZ"
 
 cd - > /dev/null
 
-if $exact; then
+if [ -n "$exact" ]; then
 	TARGET="${TARGET%.tcz}.tcz"
 	awk 'BEGIN {FS="\n";RS=""} /\n'${TARGET}'/{print $1}' "$TCEDIR"/"$DB" | grep -v "^${TARGET}"
 else
 	awk 'BEGIN {FS="\n";RS=""} /'${TARGET}'/{print $1}' "$TCEDIR"/"$DB"
 fi
-
