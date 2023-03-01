@@ -32,7 +32,7 @@ TCEDIR="/etc/sysconfig/tcedir"
 DB="dep.db"
 DBGZ="$DB.gz"
 
-# This downloads a fresh copy of dep.dbgz if any of the following are true:
+# This downloads a fresh copy of dep.db.gz if any of the following are true:
 # 1. The file does not exist.
 # 2. The file is older than 1 hour (3600 seconds).
 cd "$TCEDIR"
