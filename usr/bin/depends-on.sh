@@ -63,7 +63,7 @@ cd - > /dev/null
 # 2. If first search succeeds, a slower search is done in fields 2 through last (which are the extension's actual dependencies)
 if [ -n "$FUZZY" ]; then
     TARGET="${TARGET%.tcz}"
-    awk 'BEGIN {FS="\n";RS=""} {if ( $0 ~ /'$TARGET'/ ) { for (i=2; i <= NF; i++) { if ( $i ~ /'$TARGET'/ ) {print $1} } } }' "$TCEDIR"/"$DB"
+    awk 'BEGIN {FS="\n";RS=""} {if ( $0 ~ /'$TARGET'/ ) { for (i=2; i <= NF; i++) { if ( $i ~ /'$TARGET'/ ) {print $1; next} } } }' "$TCEDIR"/"$DB"
 else
     TARGET="${TARGET%.tcz}.tcz"
     awk 'BEGIN {FS="\n";RS=""} {if ( $0 ~ /'$TARGET'/ ) { for (i=2; i <= NF; i++) { if ( $i == "'$TARGET'" ) {print $1} } } }' "$TCEDIR"/"$DB"
