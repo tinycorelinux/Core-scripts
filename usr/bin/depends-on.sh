@@ -13,8 +13,8 @@ useBusybox
 
 unset FUZZY
 if [ "$1" = "-f" ]; then
-	FUZZY=1
-	shift
+    FUZZY=1
+    shift
 fi
 
 TARGET="$1"
@@ -32,7 +32,7 @@ TCEDIR="/etc/sysconfig/tcedir"
 DB="dep.db"
 DBGZ="$DB.gz"
 
-# This downloads a fresh copy of dep.dbgz if any of the following are true:
+# This downloads a fresh copy of dep.db.gz if any of the following are true:
 # 1. The file does not exist.
 # 2. The file is older than 1 hour (3600 seconds).
 cd "$TCEDIR"
@@ -58,10 +58,13 @@ gunzip -kf "$DBGZ"
 
 cd - > /dev/null
 
+# Searching is done in 2 steps:
+# 1. The $0 search locates records containing a potential match and is really fast
+# 2. If first search succeeds, a slower search is done in fields 2 through last (which are the extension's actual dependencies)
 if [ -n "$FUZZY" ]; then
-	TARGET="${TARGET%.tcz}"
-	awk 'BEGIN {FS="\n";RS=""} /'${TARGET}'/{print $1}' "$TCEDIR"/"$DB"
+    TARGET="${TARGET%.tcz}"
+    awk 'BEGIN {FS="\n";RS=""} {if ( $0 ~ /'$TARGET'/ ) { for (i=2; i <= NF; i++) { if ( $i ~ /'$TARGET'/ ) {print $1} } } }' "$TCEDIR"/"$DB"
 else
-	TARGET="${TARGET%.tcz}.tcz"
-	awk 'BEGIN {FS="\n";RS=""} /\n'${TARGET}'/{print $1}' "$TCEDIR"/"$DB" | grep -v "^${TARGET}"
+    TARGET="${TARGET%.tcz}.tcz"
+    awk 'BEGIN {FS="\n";RS=""} {if ( $0 ~ /'$TARGET'/ ) { for (i=2; i <= NF; i++) { if ( $i == "'$TARGET'" ) {print $1} } } }' "$TCEDIR"/"$DB"
 fi
