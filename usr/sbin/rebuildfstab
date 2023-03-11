@@ -50,6 +50,7 @@ checkntfs() {
 }
 
 # Create base fstab file (previous rebuildfstab additions removed).
+rm -f "$TMP"
 Custom=""
 while read -r Device Line
 do
