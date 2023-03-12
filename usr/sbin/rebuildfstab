@@ -104,7 +104,7 @@ do
 	if [ "$FSTYPE" == "auto" ]
 	then
 		printf "%-15s %-15s %-8s %-20s %-s\n" "$DEVROOT/$DEVNAME" "$MOUNTPOINT" "$FSTYPE" "$OPTIONS" "0 0 $ADDEDBY" >> "$TMP"
-		mkdir -p "/mnt/$DEVNAME" 2>/dev/null >/dev/null
+		mkdir -p "$MOUNTPOINT" 2>/dev/null >/dev/null
 		continue
 	fi
 
@@ -129,7 +129,7 @@ if [ -n "$DevList" ]; then
 		esac
 
 		if [ "$MOUNTPOINT" != "none" ]; then
-			mkdir -p "/mnt/$DEVNAME" 2>/dev/null >/dev/null
+			mkdir -p "$MOUNTPOINT" 2>/dev/null >/dev/null
 		fi
 
 		# Add entry to new fstab file.
