@@ -80,6 +80,7 @@ upgrade(){
 
 
 check_dependencies(){
+	[ -n "$SKIPDEPCHECK ] && return
 #	echo "${BLUE}Checking dependencies:${NORMAL}"
 	DEPS="$(/bin/busybox find "$UPGRADE_DIR" -regex '.*\.tcz\.dep$' | sort)"
 	[ -f  $TCEDIR/tcz-black.lst ] && DEPS=$(echo $DEPS | grep -v -f $TCEDIR/tcz-black.lst)
@@ -201,6 +202,10 @@ process_cmd(){
 }
 
 # Main
+if [ "$1" = "--skip-dependency-check" ]; then
+	SKIPDEPCHECK=1	
+	shift
+fi
 cd /tmp
 ERRLIST="upgrade_errors.lst"
 > "$ERRLIST"
