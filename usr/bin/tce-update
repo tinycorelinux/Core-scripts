@@ -80,7 +80,7 @@ upgrade(){
 
 
 check_dependencies(){
-	[ -n "$SKIPDEPCHECK ] && return
+	[ -n "$SKIPDEPCHECK" ] && return
 #	echo "${BLUE}Checking dependencies:${NORMAL}"
 	DEPS="$(/bin/busybox find "$UPGRADE_DIR" -regex '.*\.tcz\.dep$' | sort)"
 	[ -f  $TCEDIR/tcz-black.lst ] && DEPS=$(echo $DEPS | grep -v -f $TCEDIR/tcz-black.lst)
