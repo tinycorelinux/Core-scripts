@@ -1,0 +1,75 @@
+#!/bin/busybox ash
+
+# update-everything v7.1 (March 30, 2023)
+# by Bruno "GNUser" Dantas, with special thanks to jazzbiker and Rich
+# GPLv3
+
+# Purpose: Do a full TCL system update
+# Usage: $ update-everything
+
+PATH="/bin:/sbin:/usr/bin:/usr/sbin"
+export PATH
+
+main()
+{
+	echo "Looking for changed .dep files..."
+	get_depdb
+	recreate_dep_files
+	compare_dep_files
+
+	if $FETCHMISSING_NEEDED; then
+		echo "Building package database..."
+		tce-audit builddb
+		echo "Looking for missing dependencies..."
+		tce-audit fetchmissing
+	fi
+
+	echo "Updating extensions..."
+	tce-update --skip-dependency-check
+
+	rm -rf $DEPDIR
+	exit 0
+}
+
+get_depdb()
+{
+	rm -rf "$DEPDIR"; mkdir -p "$DEPDIR"
+	cd "$DEPDIR"
+	. /etc/init.d/tc-functions
+	getMirror
+	wget -q "$MIRROR"/"$DBGZ"
+	gunzip -kf "$DBGZ"
+}
+
+recreate_dep_files()
+{
+	awk 'BEGIN {FS="\n";RS=""} { out=$1".dep"; for (i=2; i<=NF; i++) printf("%s\n", $(i)) >out; close(out) }' dep.db
+}
+
+compare_dep_files()
+{
+	FETCHMISSING_NEEDED=false
+	for depfile in $(find $OPTIONALDIR -name '*.dep' -exec basename {} \;); do
+		extension=${depfile%.dep}
+		if [ ! -f $DEPDIR/$depfile ]; then # it's a custom extension, leave .dep file alone
+			continue
+		elif [ ! -f $OPTIONALDIR/$extension.md5.txt ]; then # it's a custom extension, leave .dep file alone
+			continue
+		# echo is used in the comparison to eat whitespace (e.g., trailing spaces and blank lines):
+		elif [ "$(echo $(cat $OPTIONALDIR/$depfile))" = "$(echo $(cat $DEPDIR/$depfile))" ]; then # .dep file is current
+			continue
+		else
+			FETCHMISSING_NEEDED=true
+			echo "local $depfile is different from one in mirror, fixing it now..."
+			cp $DEPDIR/$depfile $OPTIONALDIR
+		fi
+	done
+}
+
+# internal variables, do not touch:
+OPTIONALDIR="/etc/sysconfig/tcedir/optional"
+DEPDIR="/tmp/depfiles"
+DB="dep.db"
+DBGZ="$DB.gz"
+
+main
