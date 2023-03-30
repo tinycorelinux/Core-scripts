@@ -4,7 +4,7 @@
 # by Bruno "GNUser" Dantas, with special thanks to jazzbiker and Rich
 # GPLv3
 
-# Purpose: Do a full TCL system update
+# Purpose: Do a full TCL system update as quickly and efficiently as possible, leaving custom extensions intact 
 # Usage: $ update-everything
 
 PATH="/bin:/sbin:/usr/bin:/usr/sbin"
