@@ -1,6 +1,6 @@
 #!/bin/busybox ash
 
-# update-everything v7.1 (March 30, 2023)
+# update-everything v7.2 (March 31, 2023)
 # by Bruno "GNUser" Dantas, with special thanks to jazzbiker and Rich
 # GPLv3
 
@@ -14,10 +14,10 @@ main()
 {
 	echo "Looking for changed .dep files..."
 	get_depdb
-	recreate_dep_files
-	compare_dep_files
+	generate_dep_files
+	sync_dep_files
 
-	if $FETCHMISSING_NEEDED; then
+	if $DEP_FILES_UPDATED; then
 		echo "Building package database..."
 		tce-audit builddb
 		echo "Looking for missing dependencies..."
@@ -41,14 +41,14 @@ get_depdb()
 	gunzip -kf "$DBGZ"
 }
 
-recreate_dep_files()
+generate_dep_files()
 {
 	awk 'BEGIN {FS="\n";RS=""} { out=$1".dep"; for (i=2; i<=NF; i++) printf("%s\n", $(i)) >out; close(out) }' dep.db
 }
 
-compare_dep_files()
+sync_dep_files()
 {
-	FETCHMISSING_NEEDED=false
+	DEP_FILES_UPDATED=false
 	for depfile in $(find $OPTIONALDIR -name '*.dep' -exec basename {} \;); do
 		extension=${depfile%.dep}
 		if [ ! -f $DEPDIR/$depfile ]; then # it's a custom extension, leave .dep file alone
@@ -59,9 +59,9 @@ compare_dep_files()
 		elif [ "$(echo $(cat $OPTIONALDIR/$depfile))" = "$(echo $(cat $DEPDIR/$depfile))" ]; then # .dep file is current
 			continue
 		else
-			FETCHMISSING_NEEDED=true
 			echo "local $depfile is different from one in mirror, fixing it now..."
 			cp $DEPDIR/$depfile $OPTIONALDIR
+			DEP_FILES_UPDATED=true
 		fi
 	done
 }
