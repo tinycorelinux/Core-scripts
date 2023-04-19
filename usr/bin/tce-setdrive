@@ -32,7 +32,7 @@ setupSelectedDrive() {
   if [ ! -d "$TCEDIR"/optional ]; then
     sudo /bin/mkdir -p "$TCEDIR"/optional
     [ "$?" == 0 ] || exit 1
-    sudo /bin/chown -R ${USER}.staff "$TCEDIR" 2>/dev/null
+    sudo /bin/chown -R ${USER}:staff "$TCEDIR" 2>/dev/null
     sudo /bin/chmod -R g+w "$TCEDIR" 2>/dev/null
   fi
   [ -f "$TCEDIR"/${MYDATA}.tgz ] || touch "$TCEDIR"/${MYDATA}.tgz
@@ -76,7 +76,7 @@ TCEDIR="$(readlink /etc/sysconfig/tcedir)"
 [ -d "$TCEDIR" ] || exit 1
 if [ "${TCEDIR:0:8}" != "/tmp/tce" ]; then
   echo
-  sudo /bin/chown -R "$USER".staff "$TCEDIR" 2>/dev/null
+  sudo /bin/chown -R "$USER":staff "$TCEDIR" 2>/dev/null
   sudo /bin/chmod -R g+w "$TCEDIR" 2>/dev/null
   echo -n "${GREEN}Your TCE Drive, $TCEDIR, has already been selected!${NORMAL}"
   sleep 3

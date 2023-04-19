@@ -33,11 +33,11 @@ process_normal_tcedir() {
 	TCEDIR="$MOUNTPOINT"/"$TCE_DIR"
 	if [ ! -d "$TCEDIR"/optional ]; then
 		mkdir "$TCEDIR"/optional
-		chown -R "$USER".staff "$TCEDIR"
+		chown -R "$USER":staff "$TCEDIR"
 	fi
 	[ -L /etc/sysconfig/tcedir ] && rm -f /etc/sysconfig/tcedir
 	ln -sf "$TCEDIR" /etc/sysconfig/tcedir
-	chown -R "$USER".staff "$TCEINSTALLED"
+	chown -R "$USER":staff "$TCEINSTALLED"
 	sync
 	[ "$MOUNTPOINT" == "/tmp" ] && return
 
@@ -61,7 +61,7 @@ setupExtnDirs() {
 	[ -d "$MOUNTPOINT"/"$TCE_DIR"/optional ] || mkdir -p "$MOUNTPOINT"/"$TCE_DIR"/optional
 	[ -d "$MOUNTPOINT"/"$TCE_DIR"/ondemand ] || mkdir -p "$MOUNTPOINT"/"$TCE_DIR"/ondemand
 	[ -f "$MOUNTPOINT"/"$TCE_DIR"/onboot.lst ] || touch "$MOUNTPOINT"/"$TCE_DIR"/onboot.lst
-	chown -R "$USER".staff "$MOUNTPOINT"/"$TCE_DIR" 2>/dev/null
+	chown -R "$USER":staff "$MOUNTPOINT"/"$TCE_DIR" 2>/dev/null
 	chmod -R g+w "$MOUNTPOINT"/"$TCE_DIR" 2>/dev/null
 }
 
@@ -136,7 +136,7 @@ if [ "$1" == "booting" ] && [ -n "$ONLYBASE" ]; then
 	TCEDIR="/tmp/tce"
 	if [ ! -d "$TCEDIR"/optional ]; then
 		mkdir "$TCEDIR"/optional
-		chown -R "$USER".staff "$TCEDIR"
+		chown -R "$USER":staff "$TCEDIR"
 	fi
 else
 	process_normal_tcedir
