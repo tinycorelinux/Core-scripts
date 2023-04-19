@@ -244,7 +244,7 @@ setupHome(){
    then
       mkdir -p /home/"$USER"/.X.d
       mkdir -p /home/"$USER"/.local/bin
-      chown -R "$USER".staff /home/"$USER/"
+      chown -R "$USER":staff /home/"$USER/"
       chmod -R g+s,o-rwx /home/"$USER/"
    fi
    LIST=`mktemp`
@@ -261,7 +261,7 @@ setupHome(){
    then
       tar -C /etc/skel -T "$LIST" -cf - | tar -C /home/"$USER" -xf -
       while read ITEM
-	do chown -R "$USER".staff /home/"$USER"/"${ITEM%%/*}"
+	do chown -R "$USER":staff /home/"$USER"/"${ITEM%%/*}"
       done < "$LIST"
    fi
    rm "$LIST" 2>/dev/null
