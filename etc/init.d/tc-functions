@@ -287,11 +287,10 @@ getBuild() {
 BUILD=`uname -m`
 case ${BUILD} in
 	armv6l) echo "armv6" ;;
-	armv7l) echo "armv7" ;;
+	armv7)  echo "armv7" ;;
+	armv7l) echo "armv7l" ;;
 	aarch64) echo "aarch64" ;;
-	i686)   echo "x86" ;;
-	x86_64) [ -f /lib/ld-linux-x86-64.so.2 ] && echo "x86_64" || echo "x86" ;;
-	*)      echo "x86" ;;
+	*)      echo "armv6" ;;
 esac
 }
 
