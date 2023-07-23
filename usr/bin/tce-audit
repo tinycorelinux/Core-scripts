@@ -222,7 +222,7 @@ md5check() {
 	done
 
 	if [ $ERRORS -eq 0 ]; then
-		echo "OK: md5sums of all extensions in tce/optional are correct"
+		echo "OK: all md5sums are correct"
 		exit 0
 	else
 		exit 1
