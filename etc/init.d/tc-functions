@@ -286,11 +286,20 @@ echo ${fullver%.*}
 getBuild() {
 BUILD=`uname -m`
 case ${BUILD} in
-	armv6l) echo "armv6" ;;
-	armv7)  echo "armv7" ;;
-	armv7l) echo "armv7l" ;;
+	armv6*) echo "armv6" ;;
+	armv7*)
+		# Use raspi cpu revision to detect board
+		# REV 1=BCM2836, 2=BCM2837, 3=BCM2711
+		REV=$(cat /proc/cpuinfo | awk '/Revision/ {print $3}')
+		REV=${REV:-6}
+		case ${REV:2:1} in
+			1|2) echo "armv7";;
+			3) echo "armv7l";;
+			*) echo "unknown";;
+		esac
+	;;
 	aarch64) echo "aarch64" ;;
-	*)      echo "armv6" ;;
+	*)       echo "armv6" ;;
 esac
 }
 
