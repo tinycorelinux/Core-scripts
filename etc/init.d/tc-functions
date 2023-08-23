@@ -93,6 +93,10 @@ grep $1 /etc/mtab >/dev/null 2>&1
 if [ $? == 0 ]; then return 0; fi
 return 1
 }
+find_mountpoint_return() {
+	device_path=$(blkid -lt "$1" -o device 2> /dev/null) || device_path="/dev/$1"
+	awk -v dp="$device_path" '$1 == dp {print $2}' /etc/fstab
+}
 
 find_mountpoint() {
  MOUNTPOINT=""
