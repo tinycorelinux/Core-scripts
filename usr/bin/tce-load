@@ -110,7 +110,7 @@ update_system() {
 			sudo "$TCEINSTALLED"/$2
 		fi
 	else
-		touch "$TCEINSTALLED"/$2
+		sudo /bin/touch "$TCEINSTALLED"/$2
 	fi
 }
 
