@@ -127,8 +127,8 @@ find_mountpoint() {
    MOUNTED="yes"
    return
  fi
- 
-# Special case for virtual disk 
+
+# Special case for virtual disk
  if [ "$D2" == "/dev/tcvd" ]; then
    MOUNTPOINT="$(awk '/\/mnt\/tcvd/{print $2}' /etc/mtab|head -n 1)"
    if [ -n "$MOUNTPOINT" ]; then
@@ -154,7 +154,7 @@ for DEVICE in `autoscan-devices`; do
      if [ "$MOUNTED" == "no" ]; then
        umount "$MOUNTPOINT" >/dev/null 2>&1
      fi
-     if [ -n "$FOUND" ]; then 
+     if [ -n "$FOUND" ]; then
        echo "$DEVICE"
        return 0
      fi
@@ -223,7 +223,7 @@ checkroot() {
    exit 1
  fi
 }
- 
+
 checknotroot() {
  if [ `/usr/bin/id -u` -eq 0 ]; then
    echo "Don't run this as root." >&2
@@ -252,7 +252,7 @@ setupHome(){
    for S in `find /etc/skel -type f`
    do
 	ITEM="${S#/etc/skel/}"
-	if [ ! -e /home/"$USER"/"$ITEM" ] 
+	if [ ! -e /home/"$USER"/"$ITEM" ]
 	then
 		echo "$ITEM" >> "$LIST"
 	fi
@@ -270,7 +270,7 @@ setupHome(){
 merge() {
 awk -v mergedata="$1" -v target="$3" '
 {
-  if ( index($0,target) ) 
+  if ( index($0,target) )
   {
      while (( getline item < mergedata ) > 0 )
        print item
@@ -280,16 +280,16 @@ awk -v mergedata="$1" -v target="$3" '
 } ' "$2"
 }
 
-replace() {                    
+replace() {
 awk -v mergedata="$1" -v target="$3" '
-{                                     
-  if ( index($0,target) )       
-  {                      
+{
+  if ( index($0,target) )
+  {
      while (( getline item < mergedata ) > 0 )
-       print item                             
-     close(mergedata)                    
-  } else print $0    
-} ' "$2"         
+       print item
+     close(mergedata)
+  } else print $0
+} ' "$2"
 }
 
 purge(){
@@ -298,11 +298,11 @@ BEGIN { writeFlag=1 }
 {
   if (index($0, startTarget))
   {
-    print $0 
+    print $0
     writeFlag=0
   } else
     if (index($0, endTarget)) writeFlag=1
-  
+
   if (writeFlag) print $0
 } ' "$1"
 }
@@ -320,12 +320,22 @@ echo ${fullver%.*}
 getBuild() {
 BUILD=`uname -m`
 case ${BUILD} in
-	armv6l) echo "armv6" ;;
-	armv7l) echo "armv7" ;;
+	armv6*) echo "armv6" ;;
+	armv7*)
+		# Use raspi cpu revision to detect board
+		# REV 1=BCM2836, 2=BCM2837, 3=BCM2711
+		REV=$(cat /proc/cpuinfo | awk '/Revision/ {print $3}')
+		REV=${REV:-6}
+		case ${REV:2:1} in
+			1|2) echo "armv7";;
+			3) echo "armv7l";;
+			*) echo "unknown ${BUILD}";;
+		esac
+	;;
 	aarch64) echo "aarch64" ;;
 	i686)   echo "x86" ;;
 	x86_64) [ -f /lib/ld-linux-x86-64.so.2 ] && echo "x86_64" || echo "x86" ;;
-	*)      echo "x86" ;;
+	*)      echo "unknown ${BUILD}" ;;
 esac
 }
 
@@ -338,17 +348,17 @@ MIRROR="${MIRROR%/}/$(getMajorVer).x/$BUILD/tcz"
 }
 
 installed() {
-  if [ -e /usr/local/tce.installed/${1%.*} ]; then 
+  if [ -e /usr/local/tce.installed/${1%.*} ]; then
     return 0
-  else 
+  else
     return 1
   fi
-}  
+}
 
 getKeyEventDevice() {
 e=0
 for i in /sys/class/input/input*/name; do
-  if grep -q "eyboard" $i; then break; fi 
+  if grep -q "eyboard" $i; then break; fi
   e=`busybox expr "$e" + 1`
 done
 [ $e -gt 0 ] || exit 1
