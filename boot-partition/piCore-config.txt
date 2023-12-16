@@ -6,28 +6,28 @@
 #
 
 [PI0]
-initramfs rootfs-piCore-14.0.gz,modules-6.1.25-piCore.gz followkernel
-kernel kernel6125.img
+initramfs rootfs-piCore-14.1.gz,modules-6.1.68-piCore.gz followkernel
+kernel kernel6168.img
 
 [PI02]
-initramfs rootfs-piCore-14.0.gz,modules-6.1.25-piCore-v7.gz followkernel
-kernel kernel6125v7.img
+initramfs rootfs-piCore-14.1.gz,modules-6.1.68-piCore-v7.gz followkernel
+kernel kernel6168v7.img
 
 [PI1]
-initramfs rootfs-piCore-14.0.gz,modules-6.1.25-piCore.gz followkernel
-kernel kernel6125.img
+initramfs rootfs-piCore-14.1.gz,modules-6.1.68-piCore.gz followkernel
+kernel kernel6168.img
 
 [PI2]
-initramfs rootfs-piCore-14.0.gz,modules-6.1.25-piCore-v7.gz followkernel
-kernel kernel6125v7.img
+initramfs rootfs-piCore-14.1.gz,modules-6.1.68-piCore-v7.gz followkernel
+kernel kernel6168v7.img
 
 [PI3]
-initramfs rootfs-piCore-14.0.gz,modules-6.1.25-piCore-v7.gz followkernel
-kernel kernel6125v7.img
+initramfs rootfs-piCore-14.1.gz,modules-6.1.68-piCore-v7.gz followkernel
+kernel kernel6168v7.img
 
 [PI4]
-initramfs rootfs-piCore-14.0.gz,modules-6.1.25-piCore-v7l.gz followkernel
-kernel kernel6125v7l.img
+initramfs rootfs-piCore-14.1.gz,modules-6.1.68-piCore-v7l.gz followkernel
+kernel kernel6168v7l.img
 
 [ALL]
 cmdline cmdline.txt
