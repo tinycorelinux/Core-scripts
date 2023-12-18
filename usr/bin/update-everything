@@ -1,6 +1,6 @@
 #!/bin/busybox ash
 
-# update-everything v7.2 (March 31, 2023)
+# update-everything v8.0 (December 17, 2023)
 # by Bruno "GNUser" Dantas, with special thanks to jazzbiker and Rich
 # GPLv3
 
@@ -15,6 +15,7 @@ main()
 	echo "Looking for changed .dep files..."
 	get_depdb
 	generate_dep_files
+	fix_missing_and_extraneous_dep_files
 	sync_dep_files
 
 	if $DEP_FILES_UPDATED; then
@@ -46,20 +47,32 @@ generate_dep_files()
 	awk 'BEGIN {FS="\n";RS=""} { out=$1".dep"; for (i=2; i<=NF; i++) printf("%s\n", $(i)) >out; close(out) }' dep.db
 }
 
+fix_missing_and_extraneous_dep_files()
+{
+	for md5file in $(find $OPTIONALDIR -name '*.md5.txt' -exec basename {} \;); do
+		depfile="${md5file%.md5.txt}.dep"
+		if [ -f $DEPDIR/$depfile ] && [ ! -f $OPTIONALDIR/$depfile ]; then
+			echo "$depfile is missing, adding it..."
+			cp $DEPDIR/$depfile $OPTIONALDIR
+			DEP_FILES_UPDATED=true
+		elif [ ! -f $DEPDIR/$depfile ] && [ -f $OPTIONALDIR/$depfile ]; then
+			echo "$depfile is extraneous, removing it..."
+			rm $OPTIONALDIR/$depfile
+		fi
+	done
+}
+
 sync_dep_files()
 {
-	DEP_FILES_UPDATED=false
-	for depfile in $(find $OPTIONALDIR -name '*.dep' -exec basename {} \;); do
-		extension=${depfile%.dep}
-		if [ ! -f $DEPDIR/$depfile ]; then # it's a custom extension, leave .dep file alone
-			continue
-		elif [ ! -f $OPTIONALDIR/$extension.md5.txt ]; then # it's a custom extension, leave .dep file alone
+	for md5file in $(find $OPTIONALDIR -name '*.md5.txt' -exec basename {} \;); do
+		depfile="${md5file%.md5.txt}.dep"
+		if [ ! -f $OPTIONALDIR/$depfile ]; then # extension does not have a dep file
 			continue
 		# echo is used in the comparison to eat whitespace (e.g., trailing spaces and blank lines):
-		elif [ "$(echo $(cat $OPTIONALDIR/$depfile))" = "$(echo $(cat $DEPDIR/$depfile))" ]; then # .dep file is current
+		elif [ "$(echo $(cat $OPTIONALDIR/$depfile))" = "$(echo $(cat $DEPDIR/$depfile))" ]; then
 			continue
 		else
-			echo "local $depfile is different from one in mirror, fixing it now..."
+			echo "$depfile has changed, updating it..."
 			cp $DEPDIR/$depfile $OPTIONALDIR
 			DEP_FILES_UPDATED=true
 		fi
@@ -71,5 +84,6 @@ OPTIONALDIR="/etc/sysconfig/tcedir/optional"
 DEPDIR="/tmp/depfiles"
 DB="dep.db"
 DBGZ="$DB.gz"
+DEP_FILES_UPDATED=false
 
 main
