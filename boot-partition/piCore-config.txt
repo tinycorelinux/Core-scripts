@@ -6,28 +6,34 @@
 #
 
 [PI0]
-initramfs rootfs-piCore-14.1.gz,modules-6.1.68-piCore.gz followkernel
-kernel kernel6168.img
+initramfs rootfs-piCore-15.0.gz,modules-6.6.26-piCore.gz followkernel
+kernel kernel6626.img
 
 [PI02]
-initramfs rootfs-piCore-14.1.gz,modules-6.1.68-piCore-v7.gz followkernel
-kernel kernel6168v7.img
+initramfs rootfs-piCore-15.0.gz,modules-6.6.26-piCore-v7.gz followkernel
+kernel kernel6626v7.img
 
 [PI1]
-initramfs rootfs-piCore-14.1.gz,modules-6.1.68-piCore.gz followkernel
-kernel kernel6168.img
+initramfs rootfs-piCore-15.0.gz,modules-6.6.26-piCore.gz followkernel
+kernel kernel6626.img
 
 [PI2]
-initramfs rootfs-piCore-14.1.gz,modules-6.1.68-piCore-v7.gz followkernel
-kernel kernel6168v7.img
+initramfs rootfs-piCore-15.0.gz,modules-6.6.26-piCore-v7.gz followkernel
+kernel kernel6626v7.img
 
 [PI3]
-initramfs rootfs-piCore-14.1.gz,modules-6.1.68-piCore-v7.gz followkernel
-kernel kernel6168v7.img
+initramfs rootfs-piCore-15.0.gz,modules-6.6.26-piCore-v7.gz followkernel
+kernel kernel6626v7.img
 
 [PI4]
-initramfs rootfs-piCore-14.1.gz,modules-6.1.68-piCore-v7l.gz followkernel
-kernel kernel6168v7l.img
+initramfs rootfs-piCore-15.0.gz,modules-6.6.26-piCore-v8.gz followkernel
+kernel kernel6626v8.img
+arm_64bit=1
+
+[PI5]
+initramfs rootfs-piCore-15.0.gz,modules-6.6.26-piCore-v8.gz followkernel
+kernel kernel6626v8.img
+arm_64bit=1
 
 [ALL]
 cmdline cmdline.txt
@@ -96,9 +102,15 @@ dtparam=audio=on
 [PI4]
 # Don't have the firmware create an initial video= setting in cmdline.txt.
 # Use the kernel's default instead.
-disable_fw_kms_setup=1
-dtoverlay=vc4-kms-v3d-pi4
+dtoverlay=vc4-kms-v3d
 max_framebuffers=2
+
+[PI5]
+# Don't have the firmware create an initial video= setting in cmdline.txt.
+# Use the kernel's default instead.
+dtoverlay=vc4-kms-v3d
+max_framebuffers=2
+disable_fw_kms_setup=1
 
 [all]
 #dtoverlay=vc4-fkms-v3d
