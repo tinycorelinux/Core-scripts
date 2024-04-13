@@ -1,10 +1,10 @@
 NAME=piCore
-VERSION="14.1"
+VERSION="15.0"
 ID=piCore
-VERSION_ID=14.1
-PRETTY_NAME="TinyCoreLinux 14.1"
+VERSION_ID=15.0
+PRETTY_NAME="TinyCoreLinux 15.0"
 ANSI_COLOR="0;34"
-CPE_NAME="cpe:/o:picore:picore_linux:14.1"
+CPE_NAME="cpe:/o:picore:picore_linux:15.0"
 HOME_URL="http://tinycorelinux.net/"
 SUPPORT_URL="http://forum.tinycorelinux.net/"
 BUG_REPORT_URL="http://forum.tinycorelinux.net/"

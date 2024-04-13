@@ -318,42 +318,17 @@ echo ${fullver%.*}
 }
 
 getBuild() {
-BUILD=`uname -m`
-case ${BUILD} in
-	armv6*) echo "armv6" ;;
-	armv7*)
-		# Use raspi cpu revision to detect board
-		# REV 1=BCM2836, 2=BCM2837, 3=BCM2711, 4=BCM2712
-		REV=$(cat /proc/cpuinfo | awk '/Revision/ {print $3}')
-		REV=${REV:-6}
-		case ${REV:2:1} in
-			1|2) echo "armv7";;
-			3|4) echo "armv7l";;
-			*) echo "armv7";;
-		esac
-	;;
-	aarch64)
-		if find /lib | grep ld-linux | grep -q armhf; then
-			REV=$(cat /proc/cpuinfo | awk '/Revision/ {print $3}')
-			REV=${REV:-6}
-			case ${REV:2:1} in
-				1|2) echo "armv7";;
-				3|4) echo "armv7l";;
-				*) echo "armv7";;
-			esac
-		else
-			echo "aarch64"
-		fi
-	;;
-	*)       echo "armv6" ;;
-esac
+	case $(find /lib | grep ld-linux) in
+		*armhf*) echo "armhf";;
+		*aarch64*) echo "aarch64";;
+		*) echo "armhf";;
+	esac
 }
 
 getMirror() {
 BUILD="$1"
 [ -z "$BUILD" ] && BUILD=$(getBuild)
 read MIRROR < /opt/tcemirror
-#MIRROR="${MIRROR%/}/$(getMajorVer).x/x86/tcz"
 MIRROR="${MIRROR%/}/$(getMajorVer).x/$BUILD/tcz"
 }
 
