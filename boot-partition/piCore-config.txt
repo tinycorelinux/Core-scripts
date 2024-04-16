@@ -57,6 +57,7 @@ arm_boost=1
 
 # uncomment to force a console size. By default it will be display's size minus
 # overscan.
+# Does not work with the vc4 driver.
 #framebuffer_width=1280
 #framebuffer_height=720
 
@@ -78,26 +79,15 @@ arm_boost=1
 # uncomment for composite PAL
 #sdtv_mode=2
 
-#uncomment to overclock the arm. 700 MHz is the default.
-#arm_freq=800
-
 # Uncomment some or all of these to enable the optional hardware interfaces
 #dtparam=i2c_arm=on
 #dtparam=i2s=on
 #dtparam=spi=on
 
-# Uncomment this to enable infrared communication.
-#dtoverlay=gpio-ir,gpio_pin=17
-#dtoverlay=gpio-ir-tx,gpio_pin=18
-
 # Additional overlays and parameters are documented /boot/overlays/README
 
 # Enable audio (loads snd_bcm2835)
 dtparam=audio=on
-
-[PI3]
-# Enable DRM VC4 V3D driver on top of the dispmanx display stack
-#dtoverlay=vc4-kms-v3d
 
 [PI4]
 # Don't have the firmware create an initial video= setting in cmdline.txt.
@@ -110,7 +100,6 @@ max_framebuffers=2
 # Use the kernel's default instead.
 dtoverlay=vc4-kms-v3d
 max_framebuffers=2
-disable_fw_kms_setup=1
 
 [all]
 #dtoverlay=vc4-fkms-v3d
