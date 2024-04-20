@@ -5,20 +5,20 @@
 # RPi PI0-1-2 are not supported on this image.
 
 [PI02]
-initramfs rootfs-piCore64-15.0.gz,modules-6.6.26-piCore-v8.gz followkernel
-kernel kernel6626v8.img
+initramfs rootfs-piCore64-15.0.gz,modules-6.6.28-piCore-v8.gz followkernel
+kernel kernel6628v8.img
 
 [PI3]
-initramfs rootfs-piCore64-15.0.gz,modules-6.6.26-piCore-v8.gz followkernel
-kernel kernel6626v8.img
+initramfs rootfs-piCore64-15.0.gz,modules-6.6.28-piCore-v8.gz followkernel
+kernel kernel6628v8.img
 
 [PI4]
-initramfs rootfs-piCore64-15.0.gz,modules-6.6.26-piCore-v8.gz followkernel
-kernel kernel6626v8.img
+initramfs rootfs-piCore64-15.0.gz,modules-6.6.28-piCore-v8.gz followkernel
+kernel kernel6628v8.img
 
 [PI5]
-initramfs rootfs-piCore64-15.0.gz,modules-6.6.26-piCore-v8_16k.gz followkernel
-kernel kernel6626v8_16k.img
+initramfs rootfs-piCore64-15.0.gz,modules-6.6.28-piCore-v8-16k.gz followkernel
+kernel kernel6628v8-16k.img
 
 [CM4]
 otg_mode=1

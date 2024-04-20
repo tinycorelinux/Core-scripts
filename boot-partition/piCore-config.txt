@@ -6,33 +6,33 @@
 #
 
 [PI0]
-initramfs rootfs-piCore-15.0.gz,modules-6.6.26-piCore.gz followkernel
-kernel kernel6626.img
+initramfs rootfs-piCore-15.0.gz,modules-6.6.28-piCore.gz followkernel
+kernel kernel6628.img
 
 [PI02]
-initramfs rootfs-piCore-15.0.gz,modules-6.6.26-piCore-v7.gz followkernel
-kernel kernel6626v7.img
+initramfs rootfs-piCore-15.0.gz,modules-6.6.28-piCore-v7.gz followkernel
+kernel kernel6628v7.img
 
 [PI1]
-initramfs rootfs-piCore-15.0.gz,modules-6.6.26-piCore.gz followkernel
-kernel kernel6626.img
+initramfs rootfs-piCore-15.0.gz,modules-6.6.28-piCore.gz followkernel
+kernel kernel6628.img
 
 [PI2]
-initramfs rootfs-piCore-15.0.gz,modules-6.6.26-piCore-v7.gz followkernel
-kernel kernel6626v7.img
+initramfs rootfs-piCore-15.0.gz,modules-6.6.28-piCore-v7.gz followkernel
+kernel kernel6628v7.img
 
 [PI3]
-initramfs rootfs-piCore-15.0.gz,modules-6.6.26-piCore-v7.gz followkernel
-kernel kernel6626v7.img
+initramfs rootfs-piCore-15.0.gz,modules-6.6.28-piCore-v7.gz followkernel
+kernel kernel6628v7.img
 
 [PI4]
-initramfs rootfs-piCore-15.0.gz,modules-6.6.26-piCore-v8.gz followkernel
-kernel kernel6626v8.img
+initramfs rootfs-piCore-15.0.gz,modules-6.6.28-piCore-v8.gz followkernel
+kernel kernel6628v8.img
 arm_64bit=1
 
 [PI5]
-initramfs rootfs-piCore-15.0.gz,modules-6.6.26-piCore-v8.gz followkernel
-kernel kernel6626v8.img
+initramfs rootfs-piCore-15.0.gz,modules-6.6.28-piCore-v8.gz followkernel
+kernel kernel6628v8.img
 arm_64bit=1
 
 [ALL]
