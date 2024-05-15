@@ -1,10 +1,11 @@
 #!/bin/busybox ash
 
-# update-everything v9.0 (December 21, 2023)
+# update-everything v10.0 (May 14, 2024)
 # by Bruno "GNUser" Dantas, with special thanks to jazzbiker, Rich, Paul_123
 # GPLv3
 
-# Purpose: Do a full TCL system update as quickly and efficiently as possible, leaving custom extensions intact 
+# Purpose: Do a full TCL system update as quickly and efficiently as possible.
+#   Custom extensions (i.e., those that don't have a .md5.txt file) are left alone.
 # Usage: $ update-everything
 
 PATH="/bin:/sbin:/usr/bin:/usr/sbin"
@@ -30,6 +31,11 @@ main()
 		echo "Looking for missing dependencies..."
 		tce-audit fetchmissing
 	fi
+
+	remove_deprecated_extensions
+
+	echo -n "Press Enter key to continue. "
+	read junk
 
 	echo "Updating extensions..."
 	tce-update --skip-dependency-check
@@ -106,6 +112,20 @@ update_dep_files()
 			echo "$depfile has changed, updating it..."
 			cp "$DEPDIR/$depfile" "$OPTIONALDIR"
 			DEP_FILES_CHANGED=true
+		fi
+	done
+}
+
+remove_deprecated_extensions()
+{
+	for md5file in $(find -L "$OPTIONALDIR" -name '*.md5.txt' -exec basename {} \;); do
+		tczfile="${md5file%.md5.txt}"
+		if ! grep -q "$tczfile" "$TMPDIR/$MD5DB"; then
+			echo -n "$tczfile is deprecated (exists locally but not in repo). Remove it? [y/n] "
+			read ans
+			if ([ "$ans" = "y" ] || [ "$ans" = "Y" ]); then
+				rm "$OPTIONALDIR/$tczfile"*
+			fi
 		fi
 	done
 }
