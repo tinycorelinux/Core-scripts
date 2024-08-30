@@ -12,42 +12,14 @@ CYAN="$(echo -e '\033[1;36m')"
 WHITE="$(echo -e '\033[1;37m')"
 NORMAL="$(echo -e '\033[0;39m')"
 
-useBusybox(){
-alias ar="busybox ar"
-alias awk="busybox awk"
-alias cat="busybox cat"
-alias clear="busybox clear"
-alias cp="busybox cp"
-alias cpio="busybox cpio"
-alias cut="busybox cut"
-alias date="busybox date"
-alias dc="busybox dc"
-alias df="busybox df"
-alias du="busybox du"
-alias depmod="busybox depmod"
-alias expr="busybox expr"
-alias fdisk="busybox fdisk"
-alias fold="busybox fold"
-alias grep="busybox grep"
-alias gunzip="busybox gunzip"
-alias hostname="busybox hostname"
-alias kill="busybox kill"
-alias killall="busybox killall"
-alias less="busybox less"
-alias ls="busybox ls"
-alias md5sum="busybox md5sum"
-alias mount="busybox.suid mount"
-alias ps="busybox ps"
-alias sed="busybox sed"
-alias sort="busybox sort"
-alias swapoff="busybox swapoff"
-alias swapon="busybox swapon"
-alias sync="busybox sync"
-alias tar="busybox tar"
-alias timeout="busybox timeout"
-alias umount="busybox.suid umount"
-alias wc="busybox wc"
-alias wget="busybox wget"
+useBusybox() {
+  for cmd in ar awk cat clear cp cpio cut date dc df du depmod expr fdisk fold \
+              grep gunzip hostname kill killall less ls md5sum mount ps sed \
+              sort swapoff swapon sync tar timeout umount wc wget; do
+    alias $cmd="busybox $cmd"
+  done
+  alias mount="busybox.suid mount"
+  alias umount="busybox.suid umount"
 }
 
 trim() { echo $1; }
@@ -196,14 +168,12 @@ getpasswd(){
 }
 
 status() {
-  local CHECK=$?
-  echo -en "\\033[70G[ "
-  if [ $CHECK = 0 ]; then
-    echo -en "\\033[1;33mOK"
+  if [ $? -eq 0 ]; then
+    result="${YELLOW}OK${NORMAL}"
   else
-    echo -en "\\033[1;31mFailed"
+    result="${RED}Failed${NORMAL}"
   fi
-  echo -e "\\033[0;39m ]"
+    echo -e "\\033[70G[ ${result} ]"
 }
 
 usleep_progress() {
