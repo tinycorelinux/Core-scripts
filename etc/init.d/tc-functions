@@ -24,7 +24,7 @@ useBusybox() {
 
 trim() { echo $1; }
 
-stringinfile() { grep -q "$1" "$2"; }
+stringinfile() { grep -qF "$1" "$2"; }
 
 stringinstring() { echo "$2" | grep -qF "$1"; }
 
