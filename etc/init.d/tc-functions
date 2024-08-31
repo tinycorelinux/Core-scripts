@@ -44,10 +44,7 @@ echo "$result"
 return 0
 }
 
-checkbootparam(){
-stringinstring " $1" "$CMDLINE"
-return "$?"
-}
+checkbootparam() { stringinstring " $1" "$CMDLINE"; }
 
 getbasefile(){
 echo -e "${1##*/}"|awk -v n="$2" '{for (i=n; i>0; i--) sub(/\.[^\.]*$/, ""); print;}'
