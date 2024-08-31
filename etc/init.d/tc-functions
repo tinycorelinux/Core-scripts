@@ -14,8 +14,8 @@ NORMAL="$(echo -e '\033[0;39m')"
 
 useBusybox() {
   for cmd in ar awk cat clear cp cpio cut date dc df du depmod expr fdisk fold \
-              grep gunzip hostname kill killall less ls md5sum mount ps sed \
-              sort swapoff swapon sync tar timeout umount wc wget; do
+              grep gunzip hostname kill killall less ls md5sum ps sed \
+              sort swapoff swapon sync tar timeout wc wget; do
     alias $cmd="busybox $cmd"
   done
   alias mount="busybox.suid mount"
