@@ -28,20 +28,14 @@ stringinfile() { grep -qF "$1" "$2"; }
 
 stringinstring() { echo "$2" | grep -qF "$1"; }
 
-getbootparam(){
-stringinstring " $1=" "$CMDLINE" || return 1
-result="${CMDLINE##* $1=}"
-result="${result%%[ 	]*}"
-echo "$result"
-return 0
+getbootparam() {
+  stringinstring " $1=" "$CMDLINE" && \
+  echo "${CMDLINE##* $1=}" | grep -o '^[^ ]*' || return 1
 }
 
-getparam(){
-stringinstring " $1=" "$2" || return 1
-result="${2##*$1=}"
-result="${result%%[ 	]*}"
-echo "$result"
-return 0
+getparam() {
+  stringinstring " $1=" "$2" && \
+  echo "${2##*$1=}" | grep -o '^[^ ]*' || return 1
 }
 
 checkbootparam() { stringinstring " $1" "$CMDLINE"; }
