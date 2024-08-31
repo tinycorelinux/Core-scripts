@@ -54,11 +54,7 @@ echo -e "${1##*/}"|awk -v n="$2" '{for (i=n; i>0; i--) sub(/\.[^\.]*$/, ""); pri
 return 0
 }
 
-mounted(){
-grep $1 /etc/mtab >/dev/null 2>&1
-if [ $? == 0 ]; then return 0; fi
-return 1
-}
+mounted() { grep -qF $1 /etc/mtab; }
 
 find_mountpoint() {
  MOUNTPOINT=""
