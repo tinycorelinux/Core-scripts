@@ -1,0 +1,16 @@
+#!/bin/sh
+
+# Allow serial port to be set from command line, or default to serial0, which is a symlink to the primary uart
+if [ "$1" != "" ]; then
+	port="$1"
+else
+	port="serial0"
+fi
+
+# Start serial terminal on Raspberry Pi
+while :
+do
+  /sbin/getty -L $port 115200 vt100
+done
+
+
