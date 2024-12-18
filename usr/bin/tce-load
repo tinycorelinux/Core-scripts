@@ -89,7 +89,7 @@ copyInstall() {
 		fi
 		sudo /bin/umount -d /mnt/test
 	fi
-	[ "$BOOTING" ] || rmdir /mnt/test
+	[ "$BOOTING" ] || sudo rmdir /mnt/test
 }
 
 update_system() {
