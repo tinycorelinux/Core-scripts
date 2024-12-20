@@ -87,11 +87,12 @@ clear
 echo "tce-ab - Tiny Core Extension: Application Browser"
 echo
 while true; do
-	[ -n "$EXTN" ] && echo -e "\033[40;37;7m $EXTN \033[0m" && echo -n "A)bout I)nstall O)nDemand D)epends T)ree F)iles siZ)e L)ist "
+	[ -n "$EXTN" ] && echo -e "\033[40;37;7m $EXTN \033[0m" && echo -n "A)bout I)nstall DoW)nload-and-load O)nDemand D)epends T)ree F)iles siZ)e L)ist "
 	echo -n "S)earch P)rovides K)eywords or Q)uit: "; read -s -n1 ANS; echo
 	case ${ANS} in
 		A|a) displayInfo ;;
 		I|i) tce-load -w -i "$EXTN" ;;
+		W|w) tce-load -w -l "$EXTN" ;;
 		O|o) tce-load -w -o "$EXTN" ;;
 		D|d) displayDepends ;;
 		T|t) displayTree ;;
