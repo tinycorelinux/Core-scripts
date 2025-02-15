@@ -1,1 +1,1 @@
-zswap.compressor=lz4 zswap.zpool=z3fold dwc_otg.fiq_fsm_mask=0xF dwc_otg.lpm_enable=0 console=tty1 root=/dev/ram0 rootwait quiet nortc loglevel=3 noembed
+dwc_otg.fiq_fsm_mask=0xF dwc_otg.lpm_enable=0 console=tty1 root=/dev/ram0 rootwait quiet nortc loglevel=3 noembed
