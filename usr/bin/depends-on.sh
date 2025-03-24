@@ -56,6 +56,9 @@ fi
 
 gunzip -kf "$DBGZ"
 
+# Trailing whitespace in dep.db causes exact searches to fail, so let's prevent such failures:
+sed -r -i 's/[ \t]+$//' "$TCEDIR"/"$DB"
+
 cd - > /dev/null
 
 # Searching is done in 2 steps:
