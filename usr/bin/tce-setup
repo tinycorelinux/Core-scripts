@@ -60,7 +60,7 @@ process_normal_tcedir() {
 setupExtnDirs() {
 	[ -d "$MOUNTPOINT"/"$TCE_DIR"/optional ] || mkdir -p "$MOUNTPOINT"/"$TCE_DIR"/optional
 	[ -d "$MOUNTPOINT"/"$TCE_DIR"/ondemand ] || mkdir -p "$MOUNTPOINT"/"$TCE_DIR"/ondemand
-	[ -f "$MOUNTPOINT"/"$TCE_DIR"/onboot.lst ] || touch "$MOUNTPOINT"/"$TCE_DIR"/onboot.lst
+	[ -f "$MOUNTPOINT"/"$TCE_DIR"/"$TARGETLIST"] || touch "$MOUNTPOINT"/"$TCE_DIR"/"$TARGETLIST"
 	chown -R "$USER":staff "$MOUNTPOINT"/"$TCE_DIR" 2>/dev/null
 	chmod -R g+w "$MOUNTPOINT"/"$TCE_DIR" 2>/dev/null
 }
