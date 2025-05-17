@@ -1,4 +1,8 @@
 #!/bin/busybox ash
+# Original author Robert Shingledecker  2004
+# Changes by other authors over the years, see git
+# Larger rewrite by Richard A. Rost  March 5, 2023
+
 . /etc/init.d/tc-functions
 useBusybox
 
@@ -17,82 +21,126 @@ if [ -e /var/run/rebuildfstab.pid ]; then
 fi
 echo "$$" >/var/run/rebuildfstab.pid
 
-TMP="/tmp/fstab.$$.tmp"
+
+MyPID="$$"
+TMP="/tmp/fstab.$MyPID.tmp"
 ADDEDBY="# Added by TC"
 DEVROOT="/dev"
-
-# Create a list of fdisk -l
-FDISKL=`fdisk -l | awk '$1 ~ /dev/{printf " %s ",$1}'`
 
 # Read a list of CDROM/DVD Drives
 CDROMS=""
 CDROMSF=/etc/sysconfig/cdroms
 [ -s "$CDROMSF" ] &&  CDROMS=`cat "$CDROMSF"`
 
-grep -v "$ADDEDBY" /etc/fstab > "$TMP"
+NTFSDRIVER=""
+checkntfs() {
+    if [ -z "$NTFSDRIVER" ]; then
+        if [ -f /usr/bin/ntfs-3g ] || [ -f /usr/local/bin/ntfs-3g ] || [ -f /bin/ntfs-3g ]; then
+            NTFSDRIVER="ntfs-3g"
+        else
+            NTFSDRIVER="ntfs3"
+        fi
+    fi
+
+    FSTYPE="$NTFSDRIVER"
+    case "$FSTYPE" in
+        ntfs3|ntfs-3g) OPTIONS="$OPTIONS",iocharset=utf8;  ;;
+        ntfs) OPTIONS="$OPTIONS,ro,umask=000";  ;;
+    esac
+}
+
+# Create base fstab file (previous rebuildfstab additions removed).
+rm -f "$TMP"
+Custom=""
+while read -r Device Line
+do
+	case $Device$Line in
+		*"$ADDEDBY"*) # Skip entries added by TC.
+		continue
+		;;
+
+		"/dev/"*) # Save a list of custom entries.
+		Custom="$Custom ${Device##*/}"
+		printf "%-15s %s\n" "$Device" "$Line" >> "$TMP"
+		;;
+
+		"#"*) # Comments
+		echo "$Device $Line" >> "$TMP"
+		;;
+
+		*) # Base entries, proc, sysfs, tmpfs, ...
+		printf "%-15s %s\n" "$Device" "$Line" >> "$TMP"
+		;;
+	esac
+done < /etc/fstab
 
 # Loop through block devices
-for i in `find /sys/block/*/ -name dev`; do
-  case "$i" in
-    *loop*|*ram*)
-      continue
-      ;;
-  esac
+DevList=""
+while read -r DEVMAJOR DEVMINOR BLOCKS DEVNAME
+do
+	#  name  and  ""  filter out header and blank lines.
+	case $DEVNAME in
+		*loop*|*ram*|name|"")
+		continue
+		;;
+	esac
 
-  DEVNAME=`echo "$i"| tr [!] [/] | awk 'BEGIN{FS="/"}{print $(NF-1)}'`
-  DEVMAJOR="$(cat $i|cut -f1 -d:)"
-  
-  FSTYPE=""
-  case "$CDROMS" in *"$DEVROOT/$DEVNAME"*) FSTYPE="auto" ;; esac
+	# Custom mounts were already processed.
+	case "$Custom" in
+		*"$DEVNAME"*)
+		continue
+		;;
+	esac
 
-# First try blkid approach for FSTYPE for non floppy drives.
-  [ "$DEVMAJOR" != 2 -a -z "$FSTYPE" ] && FSTYPE="$(fstype "/dev/$DEVNAME")"
-  [ "$FSTYPE" == "linux_raid_member" ] && continue
-  [ "$FSTYPE" == "LVM2_member" ] && continue
-  if [ -z "$FSTYPE" ]; then
+	MOUNTPOINT="/mnt/$DEVNAME"
+	OPTIONS="noauto,users,exec"
+	FSTYPE=""
 
-    case "$DEVMAJOR" in
-      2|98)
-        FSTYPE="auto"
-        ;;
-      3|8|11|22|33|34)
-        case "$FDISKL" in *"$DEVROOT/$DEVNAME "*) FSTYPE="$(fstype $DEVROOT/$DEVNAME)" ;; esac
-        case "$CDROMS" in *"$DEVROOT/$DEVNAME"*) FSTYPE="auto" ;; esac
-        ;;
-      179|9|259) # MMC or MD (software raid)
-        FSTYPE="$(fstype $DEVROOT/$DEVNAME)"
-        ;;
-    esac
-  fi
+	# Set removable devices to auto.
+	case "$CDROMS" in *"$DEVROOT/$DEVNAME"*) FSTYPE="auto" ;; esac
+	# Avoid probing floppy drives.
+	[ $DEVMAJOR -eq 2 ] && FSTYPE="auto"
 
-checkntfs() {
-  if [ -f /usr/local/bin/ntfs-3g ]; then
-      FSTYPE="ntfs-3g"
-      OPTIONS="$OPTIONS"
-  else
-      FSTYPE="ntfs"
-      OPTIONS="$OPTIONS,ro,umask=000"
-  fi	
-}
-  [ -z "$FSTYPE" ] && continue
-  MOUNTPOINT="/mnt/$DEVNAME"
-  OPTIONS="noauto,users,exec"
-  case "$FSTYPE" in
-    ntfs) checkntfs ;;
-    vfat|msdos) OPTIONS="${OPTIONS},umask=000" ;;
-    ext2|ext3) OPTIONS="${OPTIONS},relatime" ;;
-    swap) OPTIONS="defaults"; MOUNTPOINT="none" ;;
-  esac
-  if [ "$MOUNTPOINT" != "none" ]; then
-    mkdir -p "/mnt/$DEVNAME" 2>/dev/null >/dev/null
-  fi	
-  grep -q "^$DEVROOT/$DEVNAME " $TMP ||
-    printf "%-15s %-15s %-8s %-20s %-s\n" "$DEVROOT/$DEVNAME" "$MOUNTPOINT" "$FSTYPE" "$OPTIONS" "0 0 $ADDEDBY" >>"$TMP"
-done
+	if [ "$FSTYPE" == "auto" ]
+	then
+		printf "%-15s %-15s %-8s %-20s %-s\n" "$DEVROOT/$DEVNAME" "$MOUNTPOINT" "$FSTYPE" "$OPTIONS" "0 0 $ADDEDBY" >> "$TMP"
+		mkdir -p "$MOUNTPOINT" 2>/dev/null >/dev/null
+		continue
+	fi
 
+	# Remaining devices get collected here.
+	DevList="$DevList $DEVROOT/$DEVNAME"
+done < /proc/partitions
+
+if [ -n "$DevList" ]; then
+	blkid -s TYPE $DevList | tr -d ':"' | while read -r DEVNAME TYPE
+	do
+		MOUNTPOINT="/mnt/${DEVNAME##*/}"
+		FSTYPE="${TYPE#*=}"
+		OPTIONS="noauto,users,exec"
+
+		# Skip these file system types.
+		case "$FSTYPE" in linux_raid_member|LVM2_member|zfs_member) continue;  ;; esac
+
+		case "$FSTYPE" in
+			ntfs) checkntfs ;;
+			vfat|msdos) OPTIONS="${OPTIONS},umask=000" ;;
+			swap) OPTIONS="defaults"; MOUNTPOINT="none" ;;
+		esac
+
+		if [ "$MOUNTPOINT" != "none" ]; then
+			mkdir -p "$MOUNTPOINT" 2>/dev/null >/dev/null
+		fi
+
+		# Add entry to new fstab file.
+		printf "%-15s %-15s %-8s %-20s %-s\n" "$DEVNAME" "$MOUNTPOINT" "$FSTYPE" "$OPTIONS" "0 0 $ADDEDBY" >> "$TMP"
+	done
+fi
+
+# Move new fstab file to its proper location.
+mv -f "$TMP" /etc/fstab
 
 # Clean up
-mv "$TMP" /etc/fstab
 rm -f /var/run/rebuildfstab.pid
 sync
 

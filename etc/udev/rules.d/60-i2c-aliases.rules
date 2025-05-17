@@ -1,0 +1,8 @@
+SUBSYSTEM=="i2c-dev",KERNEL=="i2c-[0-9]*", GROUP="staff", MODE="0660", PROGRAM="/bin/sh -c '\
+        DTNODE=/sys/class/i2c-dev/%k/device/of_node; \
+        if [ -e $$DTNODE/symlink ]; then \
+            cat $$DTNODE/symlink; \
+        else \
+            exit 1; \
+        fi \
+'", SYMLINK+="%c"

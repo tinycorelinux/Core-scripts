@@ -2,7 +2,7 @@
 # Tiny Core Browser
 # (c) Robert Shingledecker 2009-2012
 . /etc/init.d/tc-functions
-trap 'echo && exit 1 1>&2' 1 2 15
+trap 'echo; exit 1 1>&2' 1 2 15
 
 searchInfoList() {
 	clear
@@ -87,11 +87,12 @@ clear
 echo "tce-ab - Tiny Core Extension: Application Browser"
 echo
 while true; do
-	[ -n "$EXTN" ] && echo -e "\033[40;37;7m $EXTN \033[0m" && echo -n "A)bout I)nstall O)nDemand D)epends T)ree F)iles siZ)e L)ist "
+	[ -n "$EXTN" ] && echo -e "\033[40;37;7m $EXTN \033[0m" && echo -n "A)bout I)nstall doW)nload + load O)nDemand D)epends T)ree F)iles siZ)e L)ist "
 	echo -n "S)earch P)rovides K)eywords or Q)uit: "; read -s -n1 ANS; echo
 	case ${ANS} in
 		A|a) displayInfo ;;
 		I|i) tce-load -w -i "$EXTN" ;;
+		W|w) tce-load -w -i -l "$EXTN" ;;
 		O|o) tce-load -w -o "$EXTN" ;;
 		D|d) displayDepends ;;
 		T|t) displayTree ;;

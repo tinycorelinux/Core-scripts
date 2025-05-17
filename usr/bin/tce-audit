@@ -14,7 +14,7 @@ ACTION="$1"
 ARG2="$2"
 
 abort(){
-	echo "Usage: tce-audit { updatedeps | builddb | auditall | fetchmissing | nodepends | notrequired | marked | clearlst }  /path/to/tcedir/"
+	echo "Usage: tce-audit { updatedeps | builddb | auditall | fetchmissing | nodepends | notrequired | marked | clearlst | md5check }  /path/to/tcedir/"
 	echo "       tce-audit { dependson | requiredby | audit | delete } /path/to/tcedir/extension.tcz"
 	echo "       tce-audit { remove }"
 	exit 1
@@ -215,6 +215,20 @@ audit() {
 	} ' < "$TCE_DB"
 }
 
+md5check() {
+	ERRORS=0
+	for md5file in *.md5.txt; do
+		md5sum -cs $md5file || { echo "FAIL: $md5file"; ERRORS=1; }
+	done
+
+	if [ $ERRORS -eq 0 ]; then
+		echo "OK: all md5sums are correct"
+		exit 0
+	else
+		exit 1
+	fi
+}
+
 #main
 cd "$TCEDIR"
 > "$AUDIT_RESULTS"
@@ -276,6 +290,8 @@ case $1 in
 	;;
 	remove) tce-remove
 		exit 0
+	;;
+	md5check) md5check
 	;;
 	*) abort
 	;;

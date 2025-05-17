@@ -12,8 +12,14 @@ CYAN="$(echo -e '\033[1;36m')"
 WHITE="$(echo -e '\033[1;37m')"
 NORMAL="$(echo -e '\033[0;39m')"
 
-useBusybox(){
-  . /etc/init.d/busybox-aliases
+useBusybox() {
+  for cmd in ar awk cat clear cp cpio cut date dc df du depmod expr fdisk fold \
+              grep gunzip hostname kill killall less ls md5sum ps sed \
+              sort swapoff swapon sync tar timeout wc wget; do
+    alias $cmd="busybox $cmd"
+  done
+  alias mount="busybox.suid mount"
+  alias umount="busybox.suid umount"
 }
 
 trim() { echo $1; }
@@ -162,14 +168,12 @@ getpasswd(){
 }
 
 status() {
-  local CHECK=$?
-  echo -en "\\033[70G[ "
-  if [ $CHECK = 0 ]; then
-    echo -en "\\033[1;33mOK"
+  if [ $? -eq 0 ]; then
+    result="${YELLOW}OK${NORMAL}"
   else
-    echo -en "\\033[1;31mFailed"
+    result="${RED}Failed${NORMAL}"
   fi
-  echo -e "\\033[0;39m ]"
+    echo -e "\\033[70G[ ${result} ]"
 }
 
 usleep_progress() {
@@ -210,7 +214,7 @@ setupHome(){
    then
       mkdir -p /home/"$USER"/.X.d
       mkdir -p /home/"$USER"/.local/bin
-      chown -R "$USER".staff /home/"$USER/"
+      chown -R "$USER":staff /home/"$USER/"
       chmod -R g+s,o-rwx /home/"$USER/"
    fi
    LIST=`mktemp`
@@ -227,7 +231,7 @@ setupHome(){
    then
       tar -C /etc/skel -T "$LIST" -cf - | tar -C /home/"$USER" -xf -
       while read ITEM
-	do chown -R "$USER".staff /home/"$USER"/"${ITEM%%/*}"
+	do chown -R "$USER":staff /home/"$USER"/"${ITEM%%/*}"
       done < "$LIST"
    fi
    rm "$LIST" 2>/dev/null
@@ -284,21 +288,17 @@ echo ${fullver%.*}
 }
 
 getBuild() {
-BUILD=`uname -m`
-case ${BUILD} in
-	armv6) echo "armv6" ;;
-	armv7) echo "armv7" ;;
-	armv7l) echo "armv7l" ;;
-	aarch64) echo "aarch64" ;;
-	*)      echo "armv6" ;;
-esac
+	case $(find /lib | grep ld-linux) in
+		*armhf*) echo "armhf";;
+		*aarch64*) echo "aarch64";;
+		*) echo "armhf";;
+	esac
 }
 
 getMirror() {
 BUILD="$1"
 [ -z "$BUILD" ] && BUILD=$(getBuild)
 read MIRROR < /opt/tcemirror
-#MIRROR="${MIRROR%/}/$(getMajorVer).x/x86/tcz"
 MIRROR="${MIRROR%/}/$(getMajorVer).x/$BUILD/tcz"
 }
 

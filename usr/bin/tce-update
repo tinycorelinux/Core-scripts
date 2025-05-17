@@ -80,8 +80,9 @@ upgrade(){
 
 
 check_dependencies(){
+	[ -n "$SKIPDEPCHECK" ] && return
 #	echo "${BLUE}Checking dependencies:${NORMAL}"
-	DEPS="$(/bin/busybox find "$UPGRADE_DIR" -regex '.*\.tcz\.dep$' | sort)"
+	DEPS="$(/bin/busybox find -L "$UPGRADE_DIR" -regex '.*\.tcz\.dep$' | sort)"
 	[ -f  $TCEDIR/tcz-black.lst ] && DEPS=$(echo $DEPS | grep -v -f $TCEDIR/tcz-black.lst)
 	for F in $DEPS; do
 		for TARGET in `cat "$F"`; do
@@ -166,7 +167,7 @@ process_dir(){
 		echo "$UPGRADE_DIR${NORMAL}"
 		[ "$QUERY" ] && echo "${BLUE}The following extensions need to be updated!${NORMAL}"
 	fi
-	FILES="$(/bin/busybox find "$UPGRADE_DIR" -regex '.*\.tcz\.md5\.txt$' | sort)"
+	FILES="$(/bin/busybox find -L "$UPGRADE_DIR" -regex '.*\.tcz\.md5\.txt$' | sort)"
 	[ -f  $TCEDIR/tcz-black.lst ] && FILES="$(echo "$FILES" | grep -v -f $TCEDIR/tcz-black.lst)"
 	for F in $FILES; do
 		if [ "$LIST" ]; then
@@ -201,6 +202,10 @@ process_cmd(){
 }
 
 # Main
+if [ "$1" = "--skip-dependency-check" ]; then
+	SKIPDEPCHECK=1	
+	shift
+fi
 cd /tmp
 ERRLIST="upgrade_errors.lst"
 > "$ERRLIST"
@@ -216,8 +221,8 @@ gzip -d md5.db.gz
 # First test for interactive mode - passed parameters
 if [ -n "$1" ]; then
 	case $1 in
-		list) LIST=1; process_cmd "$2" ;;
-		query) QUERY=1; process_cmd "$2" ;;
+		list) LIST=1; process_cmd "${2:-$(readlink /etc/sysconfig/tcedir)}" ;;
+		query) QUERY=1; process_cmd "${2:-$(readlink /etc/sysconfig/tcedir)}" ;;
 		update) unset QUERY; process_cmd "$2" ;;
 	esac
 fi

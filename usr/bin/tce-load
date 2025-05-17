@@ -89,14 +89,14 @@ copyInstall() {
 		fi
 		sudo /bin/umount -d /mnt/test
 	fi
-	[ "$BOOTING" ] || rmdir /mnt/test
+	[ "$BOOTING" ] || sudo rmdir /mnt/test
 }
 
 update_system() {
 	if [ "$BOOTING" ]; then
 		[ "$MODULES" ] && sudo /bin/touch /etc/sysconfig/newmodules
 	else
-		[ "$THISAPP" != "$EXTENSION" ] || [ "$DOWNLOAD_ONLY" ] || [ "$LOAD_ONLY" ] || echo "$THISAPP" >> ../$ONBOOTNAME
+		[ "$THISAPP" != "$EXTENSION" ] || [ "$DOWNLOAD_ONLY" ] || [ "$LOAD_ONLY" ] || echo "$THISAPP" >> "$TCEDIR"/$ONBOOTNAME
 		if [ "$MODULES" ]; then
 			sudo /sbin/depmod -a 2>/dev/null
 			sudo /sbin/udevadm trigger
@@ -110,7 +110,7 @@ update_system() {
 			sudo "$TCEINSTALLED"/$2
 		fi
 	else
-		touch "$TCEINSTALLED"/$2
+		sudo /bin/touch "$TCEINSTALLED"/$2
 	fi
 }
 
@@ -248,6 +248,7 @@ fi
 if [ "$WGET" ]; then
 	if app_exists "$EXTENSION" "$FROMWHERE"; then
 		echo "$APPNAME is already downloaded."
+		TARGETSLOCAL="$TARGETSLOCAL\n$EXTENSION"
 	else
 		mkdir -p "$FROMWHERE"
 		TARGETSFETCH="$TARGETSFETCH\n$EXTENSION"
@@ -272,7 +273,7 @@ if [ "$TARGETSFETCH" ]; then
 	done || exit 1 # subshell cannot exit directly
 fi
 
-if [ "$TARGETSLOCAL" ]; then
+if [ "$TARGETSLOCAL" ] && [ "$INSTALL" ]; then
 	TARGETSLOCAL="`echo -e $TARGETSLOCAL | awk '/\w/ {print $1}'`"
 	recursive_scan_dep "$TARGETSLOCAL" | while read F; do
 		{ test "${F%% *}" = "@" && EXTENSION="${F#@ }" && SKIP="" || test "$SKIP"; } && continue

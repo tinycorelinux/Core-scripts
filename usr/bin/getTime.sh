@@ -1,5 +1,11 @@
 #!/bin/busybox ash
-# bmarkus - 26/02/2014
-
-NTPSERVER=$(cat /etc/sysconfig/ntpserver)
-/usr/sbin/ntpd -q -p $NTPSERVER
+if [ -f /etc/sysconfig/ntpserver ]; then
+        set $(cat /etc/sysconfig/ntpserver)
+        while [ "$1" != "" ]; do
+                NTPOPTS="$NTPOPTS -p $1"
+                shift
+        done
+else
+        NTPOPTS=""
+fi
+/usr/sbin/ntpd -q $NTPOPTS

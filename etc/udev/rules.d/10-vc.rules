@@ -1,0 +1,5 @@
+KERNEL=="vcio", GROUP="staff", MODE="0660"
+KERNEL=="vchiq", GROUP="staff", MODE="0660"
+SUBSYSTEM=="vc-sm", GROUP="staff", MODE="0660"
+KERNEL=="vcsm-cma", GROUP="staff", MODE="0660"
+SUBSYSTEM=="dma_heap", GROUP="staff", MODE="0660"
