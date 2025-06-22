@@ -58,6 +58,10 @@ process_normal_tcedir() {
 }
 
 setupExtnDirs() {
+	if [ -n "$TARGETOPTIONAL" ]; then	
+		[ -L "$MOUNTPOINT"/"$TCE_DIR"/optional ] && rm "$MOUNTPOINT"/"$TCE_DIR"/optional
+		ln -s "$MOUNTPOINT"/"$TCE_DIR"/"$TARGETOPTIONAL" "$MOUNTPOINT"/"$TCE_DIR"/optional
+	fi
 	[ -d "$MOUNTPOINT"/"$TCE_DIR"/optional ] || mkdir -p "$MOUNTPOINT"/"$TCE_DIR"/optional
 	[ -d "$MOUNTPOINT"/"$TCE_DIR"/ondemand ] || mkdir -p "$MOUNTPOINT"/"$TCE_DIR"/ondemand
 	[ -f "$MOUNTPOINT"/"$TCE_DIR"/"$TARGETLIST" ] || touch "$MOUNTPOINT"/"$TCE_DIR"/"$TARGETLIST"
@@ -108,6 +112,7 @@ for i in `cat /proc/cmdline`; do
 	case $i in
 		tce=*) TCE=${i#*=} ;;
 		lst=*) TARGETLIST=${i#*=} ;;
+		lnoptional=*) TARGETOPTIONAL=${i#*=} ;;
 	esac
 	case $i in
 		cde) CDE=1 ;;
