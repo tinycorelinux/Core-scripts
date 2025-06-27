@@ -211,6 +211,6 @@ else
 	then
 		awk 'BEGIN {FS="\n";RS=""} /'"${TARGET}"'/{i=2;while(i<=NF){if($i~/'"${TARGET}"'/)printf"%-30s : %s\n",$1,$i;i++;}}' "$LIST"
 	else
-		awk 'BEGIN {FS="\n";RS=""} /'"${TARGET}"'\n/{i=2;while(i<=NF){if($i~/'"${TARGET}"'$/)printf"%-30s : %s\n",$1,$i;i++;}}' "$LIST"
+		awk 'BEGIN {FS="\n";RS=""} /'"${TARGET}"'/{i=2;while(i<=NF){if($i~/'"${TARGET}"'$/)printf"%-30s : %s\n",$1,$i;i++;}}' "$LIST"
 	fi
 fi
