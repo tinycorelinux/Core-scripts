@@ -28,6 +28,9 @@ Exact=0
 # Run zsync on provides.db file. 0=No  1=Yes.
 NZ=1
 
+# Show full paths. 0=No 1=Yes
+FullPaths=0
+
 # Maximum age of provides.db in minutes before checking for update.
 MMIN=+15
 
@@ -135,10 +138,12 @@ Filenames in list being searched include full paths, for example:
 	usr/local/bin/grep
 
 Usage:
-   ${0##*/} [ -nz ] FileName
+   ${0##*/} [ -nz ] [ -f ] FileName
 
    -nz    Skip updating (zsync) the provides.db file. This speeds up
           the search, but might miss items if provides.db is outdated.
+
+   -f     Show the full paths as well as the extension name
 
 Examples:
    ${0##*/} cal           Finds cal anywhere in FileName
@@ -162,12 +167,13 @@ do
 	case "$ARG" in
 		-h|-help|--help) Usage;;
 		-nz) NZ=0;;
+		-f) FullPaths=1;;
 	        *) continue;;
 	esac
 done
 
 # Remove all command line switches from search term.
-for OPT in "-nz"
+for OPT in "-nz" "-f"
 do
 	StripTarget "$OPT"
 	StripTarget "$OPT"
@@ -191,9 +197,20 @@ TARGET="${TARGET%\\\$}"
 # Test if search term is missing.
 [ -z "$TARGET" ] && Usage
 
-if [ $Exact -eq 0 ]
+if [ $FullPaths -eq 0 ]
 then
-	awk 'BEGIN {FS="\n";RS=""} /'"${TARGET}"'/{print $1}' "$LIST"
+	if [ $Exact -eq 0 ]
+	then
+		awk 'BEGIN {FS="\n";RS=""} /'"${TARGET}"'/{print $1}' "$LIST"
+	else
+		awk 'BEGIN {FS="\n";RS=""} /'"${TARGET}"'\n/||/'"${TARGET}"'$/{print $1}' "$LIST"
+	fi
 else
-	awk 'BEGIN {FS="\n";RS=""} /'"${TARGET}"'\n/||/'"${TARGET}"'$/{print $1}' "$LIST"
+	# print them out as 'extension.tcz : /path/to/file'
+	if [ $Exact -eq 0 ]
+	then
+		awk 'BEGIN {FS="\n";RS=""} /'"${TARGET}"'/{i=2;while(i<=NF){if($i~/'"${TARGET}"'/)printf"%-30s : %s\n",$1,$i;i++;}}' "$LIST"
+	else
+		awk 'BEGIN {FS="\n";RS=""} /'"${TARGET}"'/{i=2;while(i<=NF){if($i~/'"${TARGET}"'$/)printf"%-30s : %s\n",$1,$i;i++;}}' "$LIST"
+	fi
 fi
