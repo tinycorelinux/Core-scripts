@@ -85,7 +85,7 @@ copyInstall() {
 	if [ "$?" == 0 ]; then
 		if [ "$(ls -A /mnt/test)" ]; then
 			yes "$FORCE" | sudo /bin/cp -ai /mnt/test/. / 2>/dev/null
-			[ -n "`find /mnt/test/ -type d -name modules`" ] && MODULES=TRUE
+			[ -d /mnt/test/usr/local/lib/modules/$KERNELVER ] && MODULES=TRUE
 		fi
 		sudo /bin/umount -d /mnt/test
 	fi
@@ -141,7 +141,7 @@ install(){
 
 			if [ -z "$EMPTYEXT" ]; then
 				yes "$FORCE" | sudo /bin/cp -ais /tmp/tcloop/"$APPNAME"/* / 2>/dev/null
-				[ -n "`find /tmp/tcloop/$APPNAME -type d -name modules`" ] && MODULES=TRUE
+				[ -d /tmp/tcloop/$APPNAME/usr/local/lib/modules/$KERNELVER ] && MODULES=TRUE
 				update_system "$THISAPP" "$APPNAME"
 				if [ ! "$BOOTING" ]; then
 					[ -s /etc/sysconfig/desktop ] && desktop.sh "$APPNAME"
