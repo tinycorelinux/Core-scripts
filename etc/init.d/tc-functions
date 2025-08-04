@@ -24,9 +24,8 @@ useBusybox() {
 
 trim() { echo $1; }
 
-stringinfile(){
-case "$(cat $2)" in *$1*) return 0;; esac
-return 1
+stringinfile() {
+  grep -qm1 "$1" "$2"
 }
 
 stringinstring(){
