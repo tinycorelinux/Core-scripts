@@ -1,6 +1,6 @@
 # /etc/profile: system-wide .profile file for the Bourne shells
 
-PATH="/usr/local/sbin:/usr/local/bin:/apps/bin:/usr/sbin:/usr/bin:/sbin:/bin"
+PATH="/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
 
 # Prompt format for Ash (Bash use /etc/bashrc).
 #
