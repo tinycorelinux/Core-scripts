@@ -1,0 +1,44 @@
+# /etc/profile: system-wide .profile file for the Bourne shells
+
+PATH="/usr/local/sbin:/usr/local/bin:/apps/bin:/usr/sbin:/usr/bin:/sbin:/bin"
+
+# Prompt format for Ash (Bash use /etc/bashrc).
+#
+if [ "`id -u`" -eq 0 ]; then
+	# Light green and blue colored prompt.
+	#PS1='\e[1;31m\u@\h\e[0m:\e[1;34m\w\e[0m\# '
+ 	PS1='\u@\h:\w\# '
+else
+	# Light green and blue colored prompt.
+ 	PS1='\e[1;32m\u@\h\e[0m:\e[1;34m\w\e[0m\$ '
+	#PS1='\u@\h:\w\$ '
+fi
+
+# Screen display for X and encoding for GTK+ apps.
+#
+G_FILENAME_ENCODING=iso8859-1
+
+# ldd fake
+#
+which ldd > /dev/null || alias ldd=LD_TRACE_LOADED_OBJECTS=1
+
+# Export all variables definied above and set mask.
+#
+export PATH LD_LIBRARY_PATH PS1 G_FILENAME_ENCODING ignoreeof
+umask 022
+
+if [ -f /etc/sysconfig/language ]; then
+. /etc/sysconfig/language
+export LANG LC_ALL
+fi
+
+if [ -f /etc/sysconfig/timezone ]; then
+. /etc/sysconfig/timezone
+export TZ
+fi
+
+for i in /etc/profile.d/*.sh ; do
+ if [ -r "$i" ]; then
+   . $i
+ fi
+done
