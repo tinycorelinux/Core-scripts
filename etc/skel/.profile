@@ -27,12 +27,16 @@ if [ -f "$HOME/.ashrc" ]; then
 	. "$HOME/.ashrc"
 fi
 
-USER="$(cat /etc/sysconfig/tcuser)"
-if [ ! -d /run/user/$(id -u "$USER") ]; then
-	sudo mkdir -p /run/user/$(id -u "$USER")
-	sudo chown "$USER":staff /run/user/$(id -u "$USER")
-	sudo chmod 700 /run/user/$(id -u "$USER")
+read USER < /etc/sysconfig/tcuser
+USERID=$(id -u "$USER")
+XDG_RUNTIME_DIR="/run/user/$USERID"
+
+if [ ! -d "$XDG_RUNTIME_DIR" ]; then
+	sudo mkdir -p "$XDG_RUNTIME_DIR"
+	sudo chown "$USER":staff "$XDG_RUNTIME_DIR"
+	sudo chmod 700 "$XDG_RUNTIME_DIR"
 fi
+export XDG_RUNTIME_DIR
 
 TERMTYPE=`/usr/bin/tty`
 [ ${TERMTYPE:5:3} == "tty" ] && (
