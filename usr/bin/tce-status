@@ -27,16 +27,19 @@ orphaned() {
 	echo "Standby checking for tcz files not found on:"
 	echo "$MIRROR"
 	echo
-	MIRROR_TYPE="$(awk 'BEGIN{FS=":"}{print $1}' /opt/tcemirror)"
-	if [ "$MIRROR_TYPE" == "http" ]; then
+	# allow both http and https
+	case "$MIRROR" in
+	http*)
 		for E in `ls "$TCEDIR"/optional/*.tcz* 2>/dev/null`; do
 			E="${E##*/}"
 			busybox wget --spider -q "$MIRROR"/"$E" 2>/dev/null || echo "$E not found!"
 		done
-	else
+		;;
+	*)
 		echo "ftp mirrors currently do not support orphan file checking."
 		echo "Select another non-ftp mirror to use this feature."
-	fi
+		;;
+	esac
 }
 
 while getopts iuo OPTION

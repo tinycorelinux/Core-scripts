@@ -7,7 +7,8 @@ useBusybox
 
 KERNELVER=$(uname -r)
 getMirror
-case $MIRROR in http*) [ -n "`which zsync`" ] && USEZSYNC=yes ;; esac
+# zsync only works with http, not https
+case $MIRROR in http:*) [ -n "`which zsync`" ] && USEZSYNC=yes ;; esac
 
 dep_vars(){
 	sed -i "s@KERNEL@$KERNELVER@" $1
@@ -19,10 +20,11 @@ fetch(){
 }
 fetchzsync(){
 	[ -f "$1" ] && rm -f "$1"
-	if zsync -i "$UPGRADE_DIR"/"$1" -q "$MIRROR"/"$1".zsync; then
+	if [ -n "$USEZSYNC" ] && zsync -i "$UPGRADE_DIR"/"$1" -q "$MIRROR"/"$1".zsync; then
 		rm -f "$1".zs-old
 	else
-		wget -cq "$MIRROR"/"$1" # Either there was no zsync file on the server, or it failed
+		# Either we can't use zsync, there was no zsync file on the server, or it failed
+		wget -cq "$MIRROR"/"$1"
 	fi
 }
 
@@ -47,11 +49,7 @@ upgrade(){
 				echo -n " ${YELLOW}$TARGET${NORMAL}"
 			else
 				echo -n  "Updating $TARGET "
-				if [ -n "$USEZSYNC" ]; then
-					fetchzsync "$TARGET" 2>/dev/null
-				else
-					fetch "$TARGET" 2>/dev/null
-				fi
+				fetchzsync "$TARGET" 2>/dev/null
 				echo "$REPO" > "$TARGET".md5.txt
 				md5sum -cs "$TARGET".md5.txt
 				if [ "$?" == 0 ]; then
@@ -90,11 +88,7 @@ check_dependencies(){
 				REPO=`grep -w "$TARGET" md5.db`
 				if [ -n "$REPO" ]; then
 					echo -n  "Fetching required dependency: $TARGET "
-					if [ -n "$USEZSYNC" ]; then
-						fetchzsync "$TARGET" 2>/dev/null
-					else
-						fetch "$TARGET" 2>/dev/null
-					fi
+					fetchzsync "$TARGET" 2>/dev/null
 					echo  "$REPO"  > "$TARGET".md5.txt
 					md5sum -cs "$TARGET".md5.txt
 					if [ "$?" == 0 ]; then
