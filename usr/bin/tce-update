@@ -20,11 +20,10 @@ fetch(){
 }
 fetchzsync(){
 	[ -f "$1" ] && rm -f "$1"
-	if [ -n "$USEZSYNC" ] && zsync -i "$UPGRADE_DIR"/"$1" -q "$MIRROR"/"$1".zsync; then
+	if zsync -i "$UPGRADE_DIR"/"$1" -q "$MIRROR"/"$1".zsync; then
 		rm -f "$1".zs-old
 	else
-		# Either we can't use zsync, there was no zsync file on the server, or it failed
-		wget -cq "$MIRROR"/"$1"
+		wget -cq "$MIRROR"/"$1" # Either there was no zsync file on the server, or it failed
 	fi
 }
 
@@ -49,7 +48,11 @@ upgrade(){
 				echo -n " ${YELLOW}$TARGET${NORMAL}"
 			else
 				echo -n  "Updating $TARGET "
-				fetchzsync "$TARGET" 2>/dev/null
+				if [ -n "$USEZSYNC" ]; then
+					fetchzsync "$TARGET" 2>/dev/null
+				else
+					fetch "$TARGET" 2>/dev/null
+				fi
 				echo "$REPO" > "$TARGET".md5.txt
 				md5sum -cs "$TARGET".md5.txt
 				if [ "$?" == 0 ]; then
@@ -88,7 +91,11 @@ check_dependencies(){
 				REPO=`grep -w "$TARGET" md5.db`
 				if [ -n "$REPO" ]; then
 					echo -n  "Fetching required dependency: $TARGET "
-					fetchzsync "$TARGET" 2>/dev/null
+					if [ -n "$USEZSYNC" ]; then
+						fetchzsync "$TARGET" 2>/dev/null
+					else
+						fetch "$TARGET" 2>/dev/null
+					fi
 					echo  "$REPO"  > "$TARGET".md5.txt
 					md5sum -cs "$TARGET".md5.txt
 					if [ "$?" == 0 ]; then
