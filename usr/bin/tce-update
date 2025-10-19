@@ -7,8 +7,9 @@ useBusybox
 
 KERNELVER=$(uname -r)
 getMirror
-# zsync only works with http, not https
-case $MIRROR in http:*) [ -n "`which zsync`" ] && USEZSYNC=yes ;; esac
+
+# zsync only works with http
+[ "$MIRRORPROTO" == "http" ] && [ -n "`which zsync`" ] && USEZSYNC=yes
 
 dep_vars(){
 	sed -i "s@KERNEL@$KERNELVER@" $1

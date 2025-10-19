@@ -15,12 +15,33 @@ select "Tiny Core Linux - Mirror Selection" "$TMP"
 ANS="$(cat /tmp/select.ans)"
 rm "$TMP"
 
-case "$ANS" in
-https*)
-   if ! [ -f /usr/local/tce.installed/ca-certificates ]; then
-      echo "https mirrors require the ca-certificates.tcz extension to be installed"
-      exit 1
-   fi
-   ;;
-esac
-[ "$ANS" != "q" ] && echo "$ANS" > /opt/tcemirror
+[ "$ANS" == "q" ] && exit
+
+MIRRORPROTO="${ANS%%://*}"
+
+# if this is changed also change /etc/init.d/tc-functions
+
+# supported protocols for mirror
+if
+  [ "$MIRRORPROTO" != "http" ] &&
+  [ "$MIRRORPROTO" != "https" ] &&
+  [ "$MIRRORPROTO" != "ftp" ]; then
+  echo "Mirror must use http[s] or ftp"
+  exit 1
+fi
+
+# https mirrors can't be done without some extensions
+if [ "$MIRRORPROTO" == "https" ]; then
+  # Test if the required extensions are installed
+  [ -e /usr/local/tce.installed/ca-certificates ] || NeedCrt=1
+  [ -e /usr/local/tce.installed/openssl ] || NeedSSL=1
+
+  if [ -n "$NeedCrt$NeedSSL" ]; then
+    echo "The following are required before using https mirrors:"
+    [ -n "$NeedCrt" ] && echo "ca-certificates.tcz"
+    [ -n "$NeedSSL" ] && echo "openssl.tcz"
+    exit 1
+  fi
+fi
+
+echo "$ANS" > /opt/tcemirror

@@ -107,11 +107,11 @@ UpdateProvidesDB()
 	/bin/ping -A -W 1 -c 2 8.8.8.8 2>&1 > /dev/null || return
 
 	getMirror
-	# zsync only works with http, not https
-	case $MIRROR in http:*) [ -n "`which zsync`" ] && USEZSYNC=yes ;; esac
+
+	# zsync only works with http
+	[ "$MIRRORPROTO" == "http" ] && [ -n "`which zsync`" ] && USEZSYNC=yes
 
 	cd "$TCEDIR"
-	# zsync only supports http, not https
 	if [ -n "$USEZSYNC" ] && zsync -i "$LIST" -q "$MIRROR"/"$DB".zsync; then
 		rm -f "$DB".zs-old
 	else
