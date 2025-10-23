@@ -324,12 +324,12 @@ if [ "$MIRRORPROTO" == "https" ]; then
   [ -e /usr/local/tce.installed/openssl ] || NeedSSL=1
 
   if [ -n "$NeedCrt$NeedSSL" ]; then
-    (
+    {
       echo "The following are required before using https mirrors:"
       [ -n "$NeedCrt" ] && echo "ca-certificates.tcz"
       [ -n "$NeedSSL" ] && echo "openssl.tcz"
       echo "Press q to exit"
-    ) | less
+    } | less
     exit 1
   fi
 fi
