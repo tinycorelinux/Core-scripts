@@ -302,8 +302,37 @@ getMirror() {
 BUILD="$1"
 [ -z "$BUILD" ] && BUILD=$(getBuild)
 read MIRROR < /opt/tcemirror
-#MIRROR="${MIRROR%/}/$(getMajorVer).x/x86/tcz"
+
+MIRRORPROTO="${MIRROR%%://*}"
 MIRROR="${MIRROR%/}/$(getMajorVer).x/$BUILD/tcz"
+
+# if this is changed also change /usr/bin/tcemirror.sh
+
+# supported protocols for mirror
+if
+  [ "$MIRRORPROTO" != "http" ] &&
+  [ "$MIRRORPROTO" != "https" ] &&
+  [ "$MIRRORPROTO" != "ftp" ]; then
+  echo "Mirror must use http[s] or ftp"
+  exit 1
+fi
+
+# https mirrors can't be done without some extensions
+if [ "$MIRRORPROTO" == "https" ]; then
+  # Test if the required extensions are installed
+  [ -e /usr/local/tce.installed/ca-certificates ] || NeedCrt=1
+  [ -e /usr/local/tce.installed/openssl ] || NeedSSL=1
+
+  if [ -n "$NeedCrt$NeedSSL" ]; then
+    {
+      echo "The following are required before using https mirrors:"
+      [ -n "$NeedCrt" ] && echo "ca-certificates.tcz"
+      [ -n "$NeedSSL" ] && echo "openssl.tcz"
+      echo "Press q to exit"
+    } | less
+    exit 1
+  fi
+fi
 }
 
 installed() {

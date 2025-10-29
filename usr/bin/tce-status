@@ -27,8 +27,9 @@ orphaned() {
 	echo "Standby checking for tcz files not found on:"
 	echo "$MIRROR"
 	echo
-	MIRROR_TYPE="$(awk 'BEGIN{FS=":"}{print $1}' /opt/tcemirror)"
-	if [ "$MIRROR_TYPE" == "http" ]; then
+
+	# allow both http and https
+	if [ "$MIRRORPROTO" != "ftp" ]; then
 		for E in `ls "$TCEDIR"/optional/*.tcz* 2>/dev/null`; do
 			E="${E##*/}"
 			busybox wget --spider -q "$MIRROR"/"$E" 2>/dev/null || echo "$E not found!"

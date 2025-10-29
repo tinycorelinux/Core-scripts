@@ -107,16 +107,18 @@ UpdateProvidesDB()
 	/bin/ping -A -W 1 -c 2 8.8.8.8 2>&1 > /dev/null || return
 
 	getMirror
+
+	# zsync only works with http
+	[ "$MIRRORPROTO" == "http" ] && [ -n "`which zsync`" ] && USEZSYNC=yes
+
 	cd "$TCEDIR"
-	if zsync -i "$LIST" -q "$MIRROR"/"$DB".zsync
-	then
+	if [ -n "$USEZSYNC" ] && zsync -i "$LIST" -q "$MIRROR"/"$DB".zsync; then
 		rm -f "$DB".zs-old
 	else
-		if [ ! -f "$LIST" ]
-		then
-		  wget -O "$LIST".gz "$MIRROR"/"$DB".gz
-		  gunzip "$LIST".gz
-		fi
+		# always update if not http or zsync failed
+		rm -f "$LIST"
+		wget -O "$LIST".gz "$MIRROR"/"$DB".gz
+		gunzip "$LIST".gz
 	fi
 	chmod g+rw "$DB"
 	touch "$DB"
