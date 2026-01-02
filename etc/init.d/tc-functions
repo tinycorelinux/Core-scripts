@@ -283,7 +283,7 @@ echo ${verid#*=}
 
 getMajorVer() {
 fullver=$(getFullVer)
-echo ${fullver%.*}
+echo $fullver | grep -Eo '^[0-9]+'
 }
 
 getBuild() {
