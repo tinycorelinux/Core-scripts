@@ -8,9 +8,8 @@
 #   Custom extensions (i.e., those that don't have a .md5.txt file) are left alone.
 # Usage: $ update-everything
 
-# note: /usr/local/bin is required so that openssl can be used for https mirrors.
-PATH="/bin:/sbin:/usr/bin:/usr/sbin:/usr/local/bin"
-export PATH
+. /etc/init.d/tc-functions
+useBusybox
 
 main()
 {
