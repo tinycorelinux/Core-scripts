@@ -14,6 +14,17 @@ if ! grep -q "noswap" /proc/cmdline; then
    swapoff -a 2>/dev/null
 fi
 
+# Save system time back to the Hardware Clock (RTC), unless disabled
+# via boot code. Mirrors the logic used in tc-config at boot time.
+if ! grep -q "nortc" /proc/cmdline; then
+   echo "${BLUE}Saving system time to Hardware Clock (RTC).${NORMAL}"
+   if grep -q "noutc" /proc/cmdline; then
+      /sbin/hwclock -l -w 2>/dev/null
+   else
+      /sbin/hwclock -u -w 2>/dev/null
+   fi
+fi
+
 # Kill all processes except those listed in /var/tmp/k5_skip.
 K5_SKIP=$(awk 'BEGIN {RS="[\n ]";ORS=" "}{print "-o "$1}' /var/tmp/k5_skip)
 echo "${RED}Killing $K5_SKIP all processes."
