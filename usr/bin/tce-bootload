@@ -251,8 +251,18 @@ else:
 	if debug:
 		debuglog(f"PID:{pid} Started for depmod")
 
-#Wait for previous 2 forks to finish.
-for i in range(2):
+# Verify permissions on tce.installed incase bad extension changed it.
+pid = os.fork()
+if pid == 0:
+	st1 = os.system("sudo chown -R root:staff /usr/local/tce.installed")
+	st2 = os.system("sudo chmod -R 775 /usr/local/tce.installed")
+	sys.exit(0)
+else:
+	if debug:
+		debuglog(f"PID:{pid} Started for chown")
+
+#Wait for previous 3 forks to finish.
+for i in range(3):
 	tmp=os.waitpid(0, 0)
 	if debug:
 		debuglog(f"PID:{tmp[0]} Finished, exit code: {tmp[1]}")
@@ -287,8 +297,8 @@ for p in tczout:
 		else:
 			#if no startup script is there, create an empty file needed.
 			try:
-				fp = open(f"{root}/usr/local/tce.installed/{base}", "wb")
-				fp.close()
+				with open(f"{root}/usr/local/tce.installed/{base}", "wb") as fp:
+					fp.write(b"\x00")
 			except OSError:
 				pass
 		sys.exit(0)
