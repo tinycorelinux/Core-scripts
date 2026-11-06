@@ -1,4 +1,3 @@
-# For more options and information see 
 # http://www.raspberrypi.org/documentation/configuration/config-txt.md
 # Some settings may impact device functionality. See link above for details
 #
@@ -6,33 +5,33 @@
 #
 
 [PI0]
-initramfs rootfs-piCore-16.0.gz,modules-6.12.25-piCore.gz followkernel
-kernel kernel61225.img
+initramfs rootfs-piCore-17.0.zst,modules-6.18.37-piCore.zst followkernel
+kernel kernel61837.img
 
 [PI02]
-initramfs rootfs-piCore-16.0.gz,modules-6.12.25-piCore-v7.gz followkernel
-kernel kernel61225v7.img
+initramfs rootfs-piCore-17.0.zst,modules-6.18.37-piCore-v7.zst followkernel
+kernel kernel61837v7.img
 
 [PI1]
-initramfs rootfs-piCore-16.0.gz,modules-6.12.25-piCore.gz followkernel
-kernel kernel61225.img
+initramfs rootfs-piCore-17.0.zst,modules-6.18.37-piCore.zst followkernel
+kernel kernel61837.img
 
 [PI2]
-initramfs rootfs-piCore-16.0.gz,modules-6.12.25-piCore-v7.gz followkernel
-kernel kernel61225v7.img
+initramfs rootfs-piCore-17.0.zst,modules-6.18.37-piCore-v7.zst followkernel
+kernel kernel61837v7.img
 
 [PI3]
-initramfs rootfs-piCore-16.0.gz,modules-6.12.25-piCore-v7.gz followkernel
-kernel kernel61225v7.img
+initramfs rootfs-piCore-17.0.zst,modules-6.18.37-piCore-v7.zst followkernel
+kernel kernel61837v7.img
 
 [PI4]
-initramfs rootfs-piCore-16.0.gz,modules-6.12.25-piCore-v8.gz followkernel
-kernel kernel61225v8.img
+initramfs rootfs-piCore-17.0.zst,modules-6.18.37-piCore-v8.zst followkernel
+kernel kernel61837v8.img
 arm_64bit=1
 
 [PI5]
-initramfs rootfs-piCore-16.0.gz,modules-6.12.25-piCore-v8.gz followkernel
-kernel kernel61225v8.img
+initramfs rootfs-piCore-17.0.zst,modules-6.18.37-piCore-v8.zst followkernel
+kernel kernel61837v8.img
 arm_64bit=1
 
 [CM4]
@@ -106,4 +105,4 @@ dtoverlay=vc4-kms-v3d
 max_framebuffers=2
 
 [all]
-#dtoverlay=vc4-fkms-v3d
+#dtoverlay=vc4-kms-v3d
